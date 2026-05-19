@@ -1,80 +1,46 @@
 # ScholarFlow Claude Skills
 
-ScholarFlow 是一套写给 Claude Code 使用的论文工作流 skills，用来完成论文抓取、主题调研、候选筛选、精读笔记生成，以及 Obsidian 知识库索引维护。
+📚 **ScholarFlow 是一套面向 Claude Code 的论文调研、候选筛选、精读笔记生成与 Obsidian 知识库维护 skills。**
 
-本项目不是独立 Web 应用。仓库里的 `SKILL.md`、提示词、路径约定和工具调用假设都面向 Claude Code。
+它的核心目标很简单：让 Claude Code 帮你把论文从“搜到一堆链接”整理成“可以在 Obsidian 里长期积累的研究知识库”。
 
-## 核心能力
+## ✨ 主要功能
 
-- 多源抓取论文：支持 arXiv、Semantic Scholar、OpenAlex、Crossref、OpenReview、PubMed、Europe PMC、bioRxiv、medRxiv 等来源。
-- 统一论文数据：对候选论文做 schema 规范化、标识符去重、标题相似度去重和排序。
-- 每日论文推荐：把近期论文整理成 Obsidian 推荐笔记。
-- 研究方向调研：根据主题生成关键词，抓取候选，筛选 `core` / `adjacent` / `exclude`，只更新候选列表。
-- 指定论文精读：用户明确指定论文后，再生成中英双语深度笔记、公式、图表和锐评。
-- Obsidian 索引维护：自动维护 `summary.md` 的论文列表区块，同时保留用户手写内容。
-- Zotero 辅助读取：可从本地 Zotero 数据库和 storage 中定位论文 PDF。
+1. 🗞️ **每日论文推荐**
+   抓取最近论文，去重、筛选、点评，并输出到 Obsidian 的每日论文目录。
 
-## Skills 一览
+2. 🔎 **研究方向调研**
+   例如调研 “Agentic RL”“RNA 序列设计”“扩散模型”，只更新候选列表，不自动精读。
 
-| Skill | 用途 |
-| --- | --- |
-| `daily-papers` | 每日论文推荐总入口 |
-| `daily-papers-fetch` | 多源抓取、规范化、去重、排序 |
-| `daily-papers-review` | Claude Code 论文筛选和推荐点评 |
-| `daily-papers-notes` | 推荐论文笔记生成和链接回填 |
-| `paper-reader` | 单篇论文精读和双语笔记生成 |
-| `topic-research` | 研究领域/方向调研，只更新候选 summary |
+3. 📖 **指定论文精读**
+   用户明确说 `读一下 XXX` 或 `精读 XXX` 后，才下载/读取论文并生成中英双语深度笔记。
 
-共享 Python 工具位于 `skills/_shared/`。安装到 Claude Code 后，它会变成 `~/.claude/skills/_shared/` 或 `<project>/.claude/skills/_shared/`。
+4. 🧠 **Obsidian 研究方向 summary 维护**
+   自动维护 `summary.md` 里的论文表格，同时保留你手写的研究判断、备注和额外章节。
 
-## 目录结构
+5. 🔗 **链接回填**
+   精读完成后，summary 中同一篇论文会从 `待精读` 更新为 EN/ZH/PDF 等本地笔记链接。
 
-```text
-.
-├── README.md                # GitHub 项目说明
-├── skills/                  # Claude Code 可安装内容，安装时平铺到 .claude/skills
-│   ├── _shared/             # 共享配置、schema、抓取器、summary 生成器
-│   ├── daily-papers/        # 每日论文抓取和富化脚本
-│   ├── daily-papers-fetch/  # 抓取阶段 Claude Code skill
-│   ├── daily-papers-review/ # 筛选点评 Claude Code skill
-│   ├── daily-papers-notes/  # 笔记生成 Claude Code skill
-│   ├── paper-reader/        # 单篇论文精读 skill 和 Zotero daemon
-│   └── topic-research/      # 研究方向调研 skill
-└── tests/                   # Python 单元测试
-```
+## 🚀 安装到 Claude Code
 
-## 安装到 Claude Code
-
-### 1. 安装 Claude Code 本体
-
-如果还没有安装 Claude Code，先安装官方 CLI：
+### 1. 安装 Claude Code
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 claude --version
 ```
 
-首次使用时进入任意项目目录启动 Claude Code，并按提示登录：
-
-```bash
-cd /path/to/your/project
-claude
-```
-
 ### 2. 安装 ScholarFlow skills
 
-Claude Code 会读取这些位置的 skill：
+Claude Code 识别的 skill 路径是：
 
-- 个人级：`~/.claude/skills/<skill-name>/SKILL.md`，所有项目可用
-- 项目级：`<project>/.claude/skills/<skill-name>/SKILL.md`，只对当前项目可用
+```text
+~/.claude/skills/<skill-name>/SKILL.md
+```
 
-本仓库包含多个 skills 和共享脚本，因此需要安装整个 ScholarFlow 目录集合，而不是只复制某一个 `SKILL.md`。
+本仓库的可安装内容放在 `skills/` 目录里，所以安装时要把 `skills/` 里面的内容平铺同步到 `~/.claude/skills/`。
 
-仓库里的 `skills/` 是源目录。安装时要把 `skills/` 里面的内容平铺复制到 Claude Code 的 skills 目录，而不是把整个仓库 clone 到 `~/.claude/skills`。
-
-#### 一行安装：个人级 skills
-
-适合大多数用户。安装后，在任何 Claude Code 项目里都能触发 ScholarFlow：
+📦 **个人级安装，一行命令：**
 
 ```bash
 mkdir -p ~/.claude/skills && \
@@ -84,13 +50,13 @@ rsync -a "$tmp_dir/scholarflow-claude-skills/skills/" ~/.claude/skills/ && \
 rm -rf "$tmp_dir"
 ```
 
-安装后确认：
+✅ **确认安装成功：**
 
 ```bash
 find ~/.claude/skills -maxdepth 2 -name SKILL.md | sort
 ```
 
-应该能看到：
+你应该能看到：
 
 ```text
 ~/.claude/skills/daily-papers/SKILL.md
@@ -101,37 +67,7 @@ find ~/.claude/skills -maxdepth 2 -name SKILL.md | sort
 ~/.claude/skills/topic-research/SKILL.md
 ```
 
-#### 一行安装：项目级 skills
-
-如果只想让某个项目使用 ScholarFlow，在该项目根目录运行：
-
-```bash
-mkdir -p .claude/skills && \
-tmp_dir="$(mktemp -d)" && \
-git clone https://github.com/CHB-learner/scholarflow-claude-skills.git "$tmp_dir/scholarflow-claude-skills" && \
-rsync -a "$tmp_dir/scholarflow-claude-skills/skills/" .claude/skills/ && \
-rm -rf "$tmp_dir"
-```
-
-安装后确认：
-
-```bash
-find .claude/skills -maxdepth 2 -name SKILL.md | sort
-```
-
-下面是更适合长期维护的安装方式。
-
-#### 长期维护方式：保留仓库工作副本，再同步到 Claude Code
-
-适合需要经常 `git pull` 更新的用户：
-
-```bash
-git clone https://github.com/CHB-learner/scholarflow-claude-skills.git ~/scholarflow-claude-skills
-mkdir -p ~/.claude/skills
-rsync -a ~/scholarflow-claude-skills/skills/ ~/.claude/skills/
-```
-
-后续更新：
+🔄 **后续更新：**
 
 ```bash
 cd ~/scholarflow-claude-skills
@@ -139,68 +75,131 @@ git pull
 rsync -a skills/ ~/.claude/skills/
 ```
 
-不要把整个仓库 clone 到 `~/.claude/skills`，否则路径会变成 `~/.claude/skills/skills/topic-research/SKILL.md`，Claude Code 发现不到这些 skills。
-
-### 3. 确认 Claude Code 能看到 skill
-
-重启 Claude Code，或退出后重新运行：
+如果你还没有保留仓库工作副本，可以先 clone：
 
 ```bash
-claude
+git clone https://github.com/CHB-learner/scholarflow-claude-skills.git ~/scholarflow-claude-skills
 ```
 
-然后在 Claude Code 中输入类似请求：
+## ⚙️ 配置 Obsidian 路径
 
-```text
-调研 RNA 序列设计 方向最近的论文
-读一下 https://arxiv.org/abs/2605.18747
-```
-
-如果 Claude Code 能按 `topic-research` 或 `paper-reader` 的流程响应，说明安装成功。
-
-## 配置
-
-先从示例配置创建本地配置：
+复制示例配置：
 
 ```bash
 cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/user-config.local.json
 ```
 
-然后编辑这些字段：
+然后编辑：
 
-- `paths.obsidian_vault`：Obsidian vault 根目录
-- `paths.daily_papers_folder`：每日论文推荐目录
-- `paths.research_fields_folder`：研究方向目录
-- `paths.zotero_db`：Zotero SQLite 数据库路径
-- `paths.zotero_storage`：Zotero storage 目录
-- `daily_papers.keywords`：每日推荐关键词
-- `research_fields`：研究方向关键词
+```text
+~/.claude/skills/_shared/user-config.local.json
+```
 
-本地配置文件默认被 git 忽略，不会提交到仓库。
+重点配置这些字段：
 
-## 推荐工作流
+```json
+{
+  "paths": {
+    "obsidian_vault": "/你的/Obsidian/Vault/路径",
+    "daily_papers_folder": "Dailypaper",
+    "research_fields_folder": "Research_Fields"
+  },
+  "daily_papers": {
+    "keywords": ["RNA design", "LLM agent"]
+  },
+  "research_fields": {
+    "RNA序列设计": ["RNA sequence design", "mRNA design"]
+  }
+}
+```
 
-### 1. 每日论文推荐
+## 🗂️ Obsidian 输出结构
 
-在 Claude Code 里直接说：
+ScholarFlow 会把内容写进你的 Obsidian vault。典型结构如下：
+
+```text
+{obsidian_vault}/
+├── Dailypaper/
+│   └── 5月/
+│       └── 0519/
+│           ├── 今日论文推荐.md
+│           ├── research-AgenticRL.md
+│           └── _meta/
+│               ├── candidates.json
+│               ├── screening.json
+│               ├── source_diagnostics.json
+│               └── dedup_stats.json
+│
+└── Research_Fields/
+    └── AgenticRL/
+        ├── summary.md
+        ├── _meta/
+        │   └── topic_papers.json
+        └── papers/
+            └── Code-as-Agent-Harness/
+                ├── Code-as-Agent-Harness_en.md
+                ├── Code-as-Agent-Harness_zh.md
+                ├── Code-as-Agent-Harness.pdf
+                └── pngs/
+```
+
+### 📌 `Dailypaper/`
+
+这里放每日推荐和某次调研的快速导航：
+
+- `今日论文推荐.md`：每日论文推荐入口
+- `research-{方向}.md`：某个研究方向的调研推荐
+- `_meta/`：抓取、去重、筛选的中间记录，方便复盘
+
+### 🧭 `Research_Fields/{方向}/summary.md`
+
+这里是一个方向的长期索引页。自动表格类似：
+
+```markdown
+| 发布时间 | 论文 | 笔记 | 代码 | 来源 | 备注 |
+|----------|------|------|------|------|------|
+| 2026.05.18 | [Code as Agent Harness](https://arxiv.org/abs/2605.18747) | 待精读 |  | [arXiv](https://arxiv.org/abs/2605.18747) |  |
+```
+
+说明：
+
+- 📝 未精读：笔记列显示 `待精读`
+- 📖 已精读：笔记列显示 `[EN] [ZH]`
+- 🔗 论文名优先链接本地 PDF，否则链接 arXiv/来源页
+- 🧑‍🔬 `备注` 列留空，给你人工写判断
+- 🧩 自动区块之外的内容不会被覆盖
+
+### 📚 `Research_Fields/{方向}/papers/{论文名}/`
+
+精读后，每篇论文会有自己的目录：
+
+```text
+papers/{MethodName}/
+├── {MethodName}_en.md
+├── {MethodName}_zh.md
+├── {MethodName}.pdf
+└── pngs/
+```
+
+## 🧪 怎么使用
+
+在 Claude Code 里直接用自然语言触发。
+
+### 1. 🗞️ 每日论文推荐
 
 ```text
 今日论文推荐
 过去一周论文推荐
-跑一下论文抓取
-跑一下论文点评
-跑一下论文笔记
+最近 3 天 RNA design 有什么论文
 ```
 
-默认输出到：
+输出位置：
 
 ```text
-{obsidian_vault}/{daily_papers_folder}/{month}月/{MMDD}/
+{obsidian_vault}/Dailypaper/{月份}/{日期}/
 ```
 
-### 2. 研究方向调研
-
-在 Claude Code 里说：
+### 2. 🔎 调研一个研究方向
 
 ```text
 调研过去一年 Agentic RL 的论文
@@ -208,19 +207,16 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 看看扩散模型有什么新文章
 ```
 
-`topic-research` 只做轻量调研：
+调研阶段只做：
 
-- 生成检索关键词
-- 多源抓取候选
-- 去重和相关性筛选
-- 写入 `{Research_Fields}/{方向}/_meta/topic_papers.json`
-- 更新 `{Research_Fields}/{方向}/summary.md`
+- 🔍 抓取候选论文
+- 🧹 去重和相关性筛选
+- 🧾 更新 `Research_Fields/{方向}/summary.md`
+- 🗃️ 写入 `Research_Fields/{方向}/_meta/topic_papers.json`
 
-调研阶段不会下载 PDF，不会抽图，不会调用 `paper-reader`，也不会生成深度笔记。
+不会自动精读，也不会自动生成深度笔记。
 
-### 3. 指定论文精读
-
-用户明确指定论文后才会精读：
+### 3. 📖 精读指定论文
 
 ```text
 读一下 RiboSphere
@@ -228,81 +224,38 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 生成笔记 https://arxiv.org/abs/2605.18747
 ```
 
-如果只说：
+精读后会写入：
+
+```text
+Research_Fields/{方向}/papers/{MethodName}/
+```
+
+并回填 `summary.md` 里的笔记链接。
+
+### 4. 📝 只看待精读候选
 
 ```text
 读一下
 ```
 
-`paper-reader` 应只列出 summary 里的 `待精读` 候选，提示用户指定论文，不自动选择论文开始深读。
+如果不带论文名，Claude 不会自动开读，而是列出 summary 中的 `待精读` 候选，让你指定要读哪一篇。
 
-## summary.md 规则
+## 🧱 仓库结构
 
-研究方向的 `summary.md` 只由 ScholarFlow 维护自动论文列表区块：
-
-```markdown
-<!-- scholarflow:paper-list:start -->
-...
-<!-- scholarflow:paper-list:end -->
+```text
+.
+├── README.md
+├── skills/
+│   ├── _shared/
+│   ├── daily-papers/
+│   ├── daily-papers-fetch/
+│   ├── daily-papers-review/
+│   ├── daily-papers-notes/
+│   ├── paper-reader/
+│   └── topic-research/
+└── tests/
 ```
 
-自动区块之外的内容都视为用户手写内容，更新时必须保留。
+## 🌟 一句话记住
 
-自动表格列固定为：
-
-```markdown
-| 发布时间 | 论文 | 笔记 | 代码 | 来源 | 备注 |
-```
-
-规则：
-
-- summary 最多展示 50 篇候选论文，完整候选和筛选记录保存在 `_meta/`。
-- 未精读论文的笔记列显示 `待精读`。
-- 已精读论文的笔记列显示 EN/ZH Obsidian 链接。
-- 论文名优先链接本地 PDF；没有 PDF 时链接 arXiv 或来源页。
-- 代码列只从候选元数据和摘要中快速抽取 GitHub/Project 链接，不逐篇联网深搜。
-- 备注列永远留空，供用户人工填写。
-
-## Python 脚本
-
-运行测试：
-
-```bash
-python3 -m unittest discover -s tests
-```
-
-直接运行多源抓取：
-
-```bash
-python3 skills/daily-papers/multi_source_fetch.py \
-  --topic "RNA inverse folding" \
-  --queries-json '["RNA inverse folding", "RNA design"]' \
-  --since-year 2021 \
-  --max-results 100 \
-  --sources auto \
-  --output /tmp/scholarflow/candidates.json
-```
-
-重新生成研究方向 summary：
-
-```bash
-python3 skills/_shared/generate_research_field_mocs.py [vault_path]
-```
-
-## 依赖
-
-- Claude Code，并启用 skills 支持
-- Python 3.10 或更新版本
-- 可访问论文来源 API 的网络环境
-- `curl`
-- Poppler 工具：`pdftotext`、`pdfimages`
-- 可选：本地 Zotero 数据库和 storage，用于 `skills/paper-reader/paper_daemon.py`
-
-## 重要约束
-
-- 本仓库是 Claude Code skill 包，不是通用命令行产品。
-- 调研阶段只更新候选索引和 summary，不自动精读。
-- 精读必须由用户明确指定论文标题、方法名、arXiv URL 或 PDF。
-- 不要覆写用户手写的 `summary.md` 内容。
-- 不要把临时抓取脚本的原始结果直接写入 summary。
-- 不要自动填写 summary 的备注列。
+先用 `调研 XXX` 建立方向候选列表，再用 `读一下 XXX` 精读指定论文，最后所有结果都会沉淀到 Obsidian 的 `Research_Fields/` 里。
