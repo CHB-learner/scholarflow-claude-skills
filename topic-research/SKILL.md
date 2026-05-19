@@ -114,9 +114,24 @@ PAPERS_DIR="{FIELD_DIR}/papers"
 mkdir -p "{PAPERS_DIR}"
 ```
 
-### 6b. 保存推荐文件
+### 6b. 更新研究方向 summary
 
-路径：`{FIELD_DIR}/summary.md`（每次重新生成）
+路径：`{FIELD_DIR}/summary.md`（增量更新，禁止整文件覆写）
+
+**重要：`summary.md` 可能包含用户手写的研究判断、备注和额外章节。更新时只能维护 ScholarFlow 自动论文列表区块，必须保留自动区块之外的全部内容。**
+
+自动维护区块边界：
+```markdown
+<!-- scholarflow:paper-list:start -->
+...
+<!-- scholarflow:paper-list:end -->
+```
+
+更新规则：
+- 如果 summary 已有上述标记，只替换标记之间的论文计数和论文列表
+- 如果 summary 没有标记但已有 `## 论文列表`，兼容旧格式：替换该章节并加上标记，保留前后用户内容
+- 如果 summary 没有 `## 论文列表`，在文件末尾追加自动维护区块
+- 用户手写备注应放在自动维护区块之外；自动区块内内容可由 ScholarFlow 重建
 
 格式：
 ```markdown
@@ -127,6 +142,7 @@ generated_by: dailypaper-skills
 
 # {主题}
 
+<!-- scholarflow:paper-list:start -->
 该研究方向下共有 **{N}** 篇论文。
 
 ## 论文列表
@@ -134,6 +150,7 @@ generated_by: dailypaper-skills
 | 发布时间 | 论文 | 笔记 | 代码 | 来源 | 备注 |
 |----------|------|------|------|------|------|
 | ... |
+<!-- scholarflow:paper-list:end -->
 ```
 
 同时保留 `_meta/` 中间产物：

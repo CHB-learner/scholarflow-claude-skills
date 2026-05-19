@@ -133,6 +133,196 @@ class PaperPipelineTests(unittest.TestCase):
         self.assertIn("RuntimeError: boom", diagnostics["sources"]["bad_source"]["errors"][0])
 
 
+class ResearchFieldMocTests(unittest.TestCase):
+    def setUp(self):
+        import user_config
+
+        user_config.load_user_config.cache_clear()
+
+    def tearDown(self):
+        import user_config
+
+        user_config.load_user_config.cache_clear()
+
+    def test_new_summary_uses_managed_paper_list_markers_and_second_run_is_stable(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_note(vault, "RNA", "BeeRNA")
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                result = generate_research_field_mocs.build_research_field_mocs(vault)
+
+                summary_path = vault / "Research_Fields" / "RNA" / "summary.md"
+                content = summary_path.read_text(encoding="utf-8")
+
+                self.assertEqual(result["created_files"], 1)
+                self.assertIn("<!-- scholarflow:paper-list:start -->", content)
+                self.assertIn("<!-- scholarflow:paper-list:end -->", content)
+                self.assertIn("该研究方向下共有 **1** 篇论文。", content)
+                self.assertIn("| 2026.05.01 | [BeeRNA]", content)
+
+                second = generate_research_field_mocs.build_research_field_mocs(vault)
+                self.assertEqual(second["created_files"], 0)
+                self.assertEqual(second["updated_files"], 0)
+
+    def test_existing_marked_summary_preserves_handwritten_sections(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            field_dir = vault / "Research_Fields" / "RNA"
+            self._write_note(vault, "RNA", "BeeRNA")
+            (field_dir / "summary.md").write_text(
+                "\n".join(
+                    [
+                        "# RNA",
+                        "",
+                        "这是一段人工维护的研究方向说明。",
+                        "",
+                        "<!-- scholarflow:paper-list:start -->",
+                        "该研究方向下共有 **0** 篇论文。",
+                        "",
+                        "## 论文列表",
+                        "",
+                        "- 旧内容",
+                        "<!-- scholarflow:paper-list:end -->",
+                        "",
+                        "## 手写备注",
+                        "",
+                        "保留这段判断。",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                result = generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (field_dir / "summary.md").read_text(encoding="utf-8")
+            self.assertEqual(result["updated_files"], 1)
+            self.assertIn("这是一段人工维护的研究方向说明。", content)
+            self.assertIn("## 手写备注", content)
+            self.assertIn("保留这段判断。", content)
+            self.assertNotIn("- 旧内容", content)
+            self.assertIn("该研究方向下共有 **1** 篇论文。", content)
+            self.assertIn("| 2026.05.01 | [BeeRNA]", content)
+
+    def test_legacy_summary_without_markers_replaces_only_paper_list_section(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            field_dir = vault / "Research_Fields" / "RNA"
+            self._write_note(vault, "RNA", "BeeRNA")
+            (field_dir / "summary.md").write_text(
+                "\n".join(
+                    [
+                        "---",
+                        "tags: [custom]",
+                        "---",
+                        "",
+                        "# RNA",
+                        "",
+                        "人工 intro 不能丢。",
+                        "",
+                        "## 论文列表",
+                        "",
+                        "- 旧论文行",
+                        "",
+                        "## 手写章节",
+                        "",
+                        "这里是用户自己的研究判断。",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (field_dir / "summary.md").read_text(encoding="utf-8")
+            self.assertIn("tags: [custom]", content)
+            self.assertIn("人工 intro 不能丢。", content)
+            self.assertIn("## 手写章节", content)
+            self.assertIn("这里是用户自己的研究判断。", content)
+            self.assertNotIn("- 旧论文行", content)
+            self.assertIn("<!-- scholarflow:paper-list:start -->", content)
+            self.assertIn("该研究方向下共有 **1** 篇论文。", content)
+
+    def test_summary_without_paper_list_appends_managed_block(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            field_dir = vault / "Research_Fields" / "RNA"
+            self._write_note(vault, "RNA", "BeeRNA")
+            (field_dir / "summary.md").write_text(
+                "# RNA\n\n人工维护的概述。\n\n## Open Questions\n\n- 还要补实验。\n",
+                encoding="utf-8",
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (field_dir / "summary.md").read_text(encoding="utf-8")
+            self.assertIn("人工维护的概述。", content)
+            self.assertIn("## Open Questions", content)
+            self.assertIn("- 还要补实验。", content)
+            self.assertIn("<!-- scholarflow:paper-list:start -->", content)
+            self.assertIn("| 2026.05.01 | [BeeRNA]", content)
+
+    def _make_vault(self, tmp: str) -> tuple[Path, Path]:
+        root = Path(tmp)
+        vault = root / "vault"
+        config_dir = root / "config"
+        (vault / "Research_Fields" / "RNA" / "papers").mkdir(parents=True)
+        config_dir.mkdir()
+        (config_dir / "user-config.json").write_text(
+            json.dumps(
+                {
+                    "paths": {
+                        "obsidian_vault": str(vault),
+                        "research_fields_folder": "Research_Fields",
+                    }
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        return vault, config_dir
+
+    def _write_note(self, vault: Path, field_name: str, method_name: str) -> None:
+        paper_dir = vault / "Research_Fields" / field_name / "papers" / method_name
+        paper_dir.mkdir(parents=True, exist_ok=True)
+        (paper_dir / f"{method_name}_en.md").write_text(
+            "\n".join(
+                [
+                    "---",
+                    "date: 2026-05-01",
+                    "---",
+                    "",
+                    f"# {method_name}",
+                    "",
+                    "| arXiv ID | 2605.07608 |",
+                    "[GitHub](https://github.com/example/repo)",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        (paper_dir / f"{method_name}_zh.md").write_text(f"# {method_name}\n", encoding="utf-8")
+        (paper_dir / f"{method_name}.pdf").write_bytes(b"%PDF-1.4\n")
+
+
 class ScriptEntrypointTests(unittest.TestCase):
     def test_help_entrypoints_import_cleanly(self):
         import backfill_links

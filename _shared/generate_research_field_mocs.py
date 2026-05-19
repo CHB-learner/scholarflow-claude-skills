@@ -32,6 +32,10 @@ if str(_SHARED_DIR) not in sys.path:
 from user_config import paths_config, load_user_config
 
 
+PAPER_LIST_START = "<!-- scholarflow:paper-list:start -->"
+PAPER_LIST_END = "<!-- scholarflow:paper-list:end -->"
+
+
 def extract_arxiv_source(content: str) -> str:
     """Extract arXiv source URL from content (any format)."""
     # Try various arXiv ID patterns
@@ -117,6 +121,7 @@ def build_research_field_mocs(vault_path: Path) -> dict:
             # Extract info from en.md (or zh.md as fallback)
             paper_date = ""
             paper_github = ""
+            paper_source = ""
             note_file = paper_dir / f"{method_name}_en.md" if has_en else (paper_dir / f"{method_name}_zh.md" if has_zh else None)
             if note_file and note_file.exists():
                 content = note_file.read_text(encoding="utf-8")
@@ -168,22 +173,25 @@ def build_research_field_mocs(vault_path: Path) -> dict:
 
         # Generate summary.md
         summary_path = field_dir / "summary.md"
-        content = _build_summary_content(field_name, papers, vault_path)
+        managed_block = _build_managed_paper_list_block(papers, vault_path)
 
         if summary_path.exists():
-            if summary_path.read_text(encoding="utf-8") == content:
+            existing = summary_path.read_text(encoding="utf-8")
+            content = _merge_summary_content(existing, field_name, managed_block)
+            if existing == content:
                 pass
             else:
                 summary_path.write_text(content, encoding="utf-8")
                 result["updated_files"] += 1
         else:
+            content = _build_summary_content(field_name, managed_block)
             summary_path.write_text(content, encoding="utf-8")
             result["created_files"] += 1
 
     return result
 
 
-def _build_summary_content(field_name: str, papers: list, vault_root: Path) -> str:
+def _build_summary_content(field_name: str, managed_block: str) -> str:
     """生成 summary.md 的内容"""
     lines = [
         "---",
@@ -193,6 +201,15 @@ def _build_summary_content(field_name: str, papers: list, vault_root: Path) -> s
         "",
         f"# {field_name}",
         "",
+    ]
+    lines.append(managed_block)
+    return "\n".join(lines)
+
+
+def _build_managed_paper_list_block(papers: list, vault_root: Path) -> str:
+    """Build the auto-managed paper list block for summary.md."""
+    lines = [
+        PAPER_LIST_START,
         f"该研究方向下共有 **{len(papers)}** 篇论文。",
         "",
         "## 论文列表",
@@ -237,7 +254,46 @@ def _build_summary_content(field_name: str, papers: list, vault_root: Path) -> s
 
             lines.append(f"| {date_str} | {paper_link} | {notes_link} | {github_link} | {source_link} | |")
 
-    lines.extend(["", "---", "", "*由 dailypaper-skills 自动生成*"])
+    lines.append(PAPER_LIST_END)
+    return "\n".join(lines)
+
+
+def _merge_summary_content(existing: str, field_name: str, managed_block: str) -> str:
+    """Update only ScholarFlow's managed paper-list block in summary.md."""
+    if PAPER_LIST_START in existing and PAPER_LIST_END in existing:
+        start = existing.index(PAPER_LIST_START)
+        end = existing.index(PAPER_LIST_END, start) + len(PAPER_LIST_END)
+        suffix = existing[end:]
+        return (
+            existing[:start].rstrip()
+            + "\n\n"
+            + managed_block
+            + ("\n\n" + suffix.lstrip("\n") if suffix.strip() else "")
+        )
+
+    heading_match = re.search(r"(?m)^## 论文列表\s*$", existing)
+    if heading_match:
+        prefix = _strip_legacy_count(existing[: heading_match.start()])
+        next_heading = re.search(r"(?m)^## .+$", existing[heading_match.end():])
+        if next_heading:
+            suffix = existing[heading_match.end() + next_heading.start():]
+        else:
+            suffix = ""
+        return prefix.rstrip() + "\n\n" + managed_block + ("\n\n" + suffix.lstrip("\n") if suffix.strip() else "")
+
+    base = existing.rstrip()
+    if not base:
+        return _build_summary_content(field_name, managed_block)
+    return base + "\n\n" + managed_block
+
+
+def _strip_legacy_count(prefix: str) -> str:
+    """Remove the old auto-generated count line immediately before ## 论文列表."""
+    lines = prefix.rstrip().splitlines()
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if lines and re.fullmatch(r"该研究方向下共有 \*\*\d+\*\* 篇论文。", lines[-1].strip()):
+        lines.pop()
     return "\n".join(lines)
 
 
