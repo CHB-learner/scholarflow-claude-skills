@@ -62,18 +62,18 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 
 ```json
 {
-  "vault": "/Users/at/Desktop/研究生icloud/笔记/dailypaper2026/papers",
+  "vault": "~/Obsidian/ScholarFlowDemo",
   "folders": {
     "daily": "Dailypaper",
     "research": "Research_Fields",
     "uncategorized": "未分类"
   },
   "daily": {
-    "keywords": ["RNA design", "LLM agent"]
+    "keywords": ["scientific agents", "controllable generation"]
   },
   "fields": {
-    "RNA序列设计": ["RNA sequence design", "mRNA design"],
-    "AgenticRL": ["agentic RL", "LLM agent reinforcement learning"]
+    "多智能体科研": ["multi-agent research automation", "scientific agent"],
+    "可控生成模型": ["controllable generation", "diffusion planning"]
   },
   "zotero": {
     "db": "~/Zotero/zotero.sqlite",
@@ -110,7 +110,7 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 │           └── source_diagnostics.json
 │
 ├── Research_Fields/
-│   └── AgenticRL/
+│   └── 多智能体科研/
 │       ├── summary.md
 │       ├── _meta/
 │       │   ├── candidates.json
@@ -119,19 +119,19 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 │       │   ├── dedup_stats.json
 │       │   └── topic_papers.json
 │       └── papers/
-│           └── Code-as-Agent-Harness/
-│               ├── Code-as-Agent-Harness_en.md
-│               ├── Code-as-Agent-Harness_zh.md
-│               ├── Code-as-Agent-Harness.pdf
+│           └── AtlasAgent/
+│               ├── AtlasAgent_en.md
+│               ├── AtlasAgent_zh.md
+│               ├── AtlasAgent.pdf
 │               └── pngs/
 │
 └── 未分类/
     ├── summary.md
     └── papers/
-        └── Some-Paper/
-            ├── Some-Paper_en.md
-            ├── Some-Paper_zh.md
-            ├── Some-Paper.pdf
+        └── CurioGraph/
+            ├── CurioGraph_en.md
+            ├── CurioGraph_zh.md
+            ├── CurioGraph.pdf
             └── pngs/
 ```
 
@@ -152,7 +152,7 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 
 | 发布时间 | 论文 | 笔记 | 代码 | 来源 | 备注 |
 |----------|------|------|------|------|------|
-| 2026.05.18 | [Code as Agent Harness](https://arxiv.org/abs/2605.18747) | 待精读 |  | [arXiv](https://arxiv.org/abs/2605.18747) |  |
+| 2026.06.01 | [AtlasAgent](https://arxiv.org/abs/xxxx.xxxxx) | 待精读 | [GitHub](https://github.com/example/atlas-agent) | [arXiv](https://arxiv.org/abs/xxxx.xxxxx) |  |
 
 说明：
 
@@ -178,7 +178,7 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 ```text
 今日论文推荐
 过去一周论文推荐
-最近 3 天 RNA design 有什么论文
+最近 3 天 scientific agents 有什么论文
 ```
 
 📍 输出到：
@@ -190,9 +190,9 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 ### 2. 📖 读某篇论文
 
 ```text
-读一下 RiboSphere
-精读 Code as Agent Harness
-生成笔记 https://arxiv.org/abs/2605.18747
+读一下 AtlasAgent
+精读 MemoryWeaver
+生成笔记 https://arxiv.org/abs/xxxx.xxxxx
 ```
 
 🎯 如果匹配到研究方向，输出到：
@@ -210,8 +210,8 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 ### 3. 🔎 领域调研
 
 ```text
-调研过去一年 Agentic RL 的论文
-调研 RNA 序列设计 方向最近的论文
+调研过去一年多智能体科研助手的论文
+调研可控生成模型方向最近的论文
 看看扩散模型有什么新文章
 ```
 

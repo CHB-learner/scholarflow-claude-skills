@@ -81,10 +81,10 @@ class ConfigCompatibilityTests(unittest.TestCase):
                             "research": "Research_Fields",
                             "uncategorized": "未分类",
                         },
-                        "daily": {"keywords": ["RNA design", "LLM agent"]},
+                        "daily": {"keywords": ["scientific agents", "controllable generation"]},
                         "fields": {
-                            "RNA序列设计": ["RNA sequence design", "mRNA design"],
-                            "AgenticRL": ["agentic RL", "LLM agent reinforcement learning"],
+                            "多智能体科研": ["multi-agent research automation", "scientific agent"],
+                            "可控生成模型": ["controllable generation", "diffusion planning"],
                         },
                         "zotero": {
                             "db": "~/Zotero/zotero.sqlite",
@@ -103,12 +103,12 @@ class ConfigCompatibilityTests(unittest.TestCase):
                 self.assertEqual(user_config.research_fields_dir(), new_vault / "Research_Fields")
                 self.assertEqual(user_config.paper_notes_dir(), new_vault / "Research_Fields")
                 self.assertEqual(user_config.uncategorized_dir(), new_vault / "未分类")
-                self.assertEqual(user_config.daily_papers_config()["keywords"], ["RNA design", "LLM agent"])
+                self.assertEqual(user_config.daily_papers_config()["keywords"], ["scientific agents", "controllable generation"])
                 self.assertEqual(
                     user_config.research_fields_config(),
                     {
-                        "RNA序列设计": ["RNA sequence design", "mRNA design"],
-                        "AgenticRL": ["agentic RL", "LLM agent reinforcement learning"],
+                        "多智能体科研": ["multi-agent research automation", "scientific agent"],
+                        "可控生成模型": ["controllable generation", "diffusion planning"],
                     },
                 )
                 self.assertEqual(user_config.zotero_db_path(), Path("~/Zotero/zotero.sqlite").expanduser())
@@ -409,13 +409,13 @@ class ResearchFieldMocTests(unittest.TestCase):
                 "RNA",
                 [
                     {
-                        "title": "RiboSphere: Learning Unified RNA Representations",
-                        "method_name": "RiboSphere",
+                        "title": "AtlasAgent: Coordinated Scientific Agents",
+                        "method_name": "AtlasAgent",
                         "date": "2026-03-20",
                         "url": "https://arxiv.org/abs/2603.19636",
-                        "code_url": "https://github.com/example/ribosphere",
+                        "code_url": "https://github.com/example/atlas-agent",
                         "label": "core",
-                        "reason": "统一 RNA 结构表示，适合后续精读",
+                        "reason": "多智能体科研协作，适合后续精读",
                         "note_status": "pending",
                     }
                 ],
@@ -428,8 +428,8 @@ class ResearchFieldMocTests(unittest.TestCase):
             content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
             self.assertEqual(result["papers_found"], 1)
             self.assertIn("该研究方向下共有 **1** 篇论文。", content)
-            self.assertIn("| 2026.03.20 | [RiboSphere](https://arxiv.org/abs/2603.19636) | 待精读 | [GitHub](https://github.com/example/ribosphere) | [arXiv](https://arxiv.org/abs/2603.19636) |  |", content)
-            self.assertNotIn("统一 RNA 结构表示，适合后续精读", content)
+            self.assertIn("| 2026.03.20 | [AtlasAgent](https://arxiv.org/abs/2603.19636) | 待精读 | [GitHub](https://github.com/example/atlas-agent) | [arXiv](https://arxiv.org/abs/2603.19636) |  |", content)
+            self.assertNotIn("多智能体科研协作，适合后续精读", content)
 
     def test_topic_candidate_and_existing_note_deduplicate_to_done_status(self):
         import generate_research_field_mocs
@@ -578,14 +578,14 @@ class ResearchFieldMocTests(unittest.TestCase):
                         "title": "Versioned Agent Paper",
                         "method_name": "Versioned",
                         "date": "2026-05-18",
-                        "url": "https://arxiv.org/abs/2605.18747v1",
+                        "url": "https://arxiv.org/abs/2606.01234v1",
                         "note_status": "pending",
                     },
                     {
                         "title": "Versioned Agent Paper",
                         "method_name": "Versioned",
                         "date": "2026-05-18",
-                        "url": "https://arxiv.org/abs/2605.18747",
+                        "url": "https://arxiv.org/abs/2606.01234",
                         "note_status": "pending",
                     },
                 ],
@@ -641,16 +641,16 @@ class ResearchFieldMocTests(unittest.TestCase):
 
         with TemporaryDirectory() as tmp:
             vault, config_dir = self._make_vault(tmp)
-            self._write_note(vault, "RNA", "RiboSphere", legacy_root=True)
+            self._write_note(vault, "RNA", "AtlasAgent", legacy_root=True)
 
             with patch.object(user_config, "_config_dir", return_value=config_dir):
                 user_config.load_user_config.cache_clear()
                 generate_research_field_mocs.build_research_field_mocs(vault)
 
             content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
-            self.assertIn("| 2026.05.01 | [RiboSphere]", content)
-            self.assertIn("file=RiboSphere/RiboSphere.pdf", content)
-            self.assertIn("file=RiboSphere/RiboSphere_en", content)
+            self.assertIn("| 2026.05.01 | [AtlasAgent]", content)
+            self.assertIn("file=AtlasAgent/AtlasAgent.pdf", content)
+            self.assertIn("file=AtlasAgent/AtlasAgent_en", content)
 
     def test_root_uncategorized_notes_are_indexed_like_other_fields(self):
         import generate_research_field_mocs

@@ -1,5 +1,5 @@
 {
-  "vault": "~/ObsidianVault",
+  "vault": "~/Obsidian/ScholarFlowDemo",
   "folders": {
     "daily": "Dailypaper",
     "research": "Research_Fields",
@@ -7,8 +7,8 @@
   },
   "daily": {
     "keywords": [
-      "RNA design",
-      "LLM agent"
+      "scientific agents",
+      "controllable generation"
     ],
     "negative_keywords": [],
     "domain_boost_keywords": [],
@@ -20,13 +20,13 @@
     "top_n": 30
   },
   "fields": {
-    "RNA序列设计": [
-      "RNA sequence design",
-      "mRNA design"
+    "多智能体科研": [
+      "multi-agent research automation",
+      "scientific agent"
     ],
-    "AgenticRL": [
-      "agentic RL",
-      "LLM agent reinforcement learning"
+    "可控生成模型": [
+      "controllable generation",
+      "diffusion planning"
     ]
   },
   "zotero": {

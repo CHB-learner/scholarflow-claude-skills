@@ -3,7 +3,7 @@
 fetch_papers.py — Broad search for papers, keyword-filtered.
 
 Usage:
-    python3 fetch_papers.py --field "RNA序列设计" --keywords "RNA design,mRNA,ribozyme" --days 60
+    python3 fetch_papers.py --field "多智能体科研" --keywords "scientific agent,research automation" --days 60
 
 Output: JSON array of fetched papers matching keywords.
 If --download-pdfs is set, also downloads PDFs to --pdf-dir.
@@ -376,7 +376,7 @@ def merge_papers(hf_papers: list[dict], arxiv_papers: list[dict]) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--field", required=True, help="Research field name (e.g., 'RNA序列设计')")
+    parser.add_argument("--field", required=True, help="Research field name (e.g., '多智能体科研')")
     parser.add_argument("--keywords", required=True, help="Comma-separated keywords for search")
     parser.add_argument("--days", type=int, default=60, help="Number of days to search (default: 60)")
     parser.add_argument("--max-arxiv", type=int, default=300, help="Max arXiv results (default: 300)")

@@ -40,7 +40,7 @@ description: |
 
 完整路径：`{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/`
 
-例如：今天是 2026-05-20 → `/Users/at/Desktop/研究生icloud/笔记/dailypaper2026/papers/Dailypaper/2026-05-20/`
+例如：今天是 2026-05-20 → `~/Obsidian/ScholarFlowDemo/Dailypaper/2026-05-20/`
 
 **创建目录**（如果不存在）：
 ```bash
