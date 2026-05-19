@@ -41,20 +41,78 @@ ScholarFlow 是一套写给 Claude Code 使用的论文工作流 skills，用来
 └── tests/                   # Python 单元测试
 ```
 
-## 安装
+## 安装到 Claude Code
 
-如果你希望这个仓库直接管理 Claude Code 的 skills 目录：
+### 1. 安装 Claude Code 本体
+
+如果还没有安装 Claude Code，先安装官方 CLI：
 
 ```bash
+npm install -g @anthropic-ai/claude-code
+claude --version
+```
+
+首次使用时进入任意项目目录启动 Claude Code，并按提示登录：
+
+```bash
+cd /path/to/your/project
+claude
+```
+
+### 2. 安装 ScholarFlow skills
+
+Claude Code 会读取 `~/.claude/skills/` 下的 skill 目录。本仓库有两种安装方式。
+
+#### 方式 A：让本仓库直接管理整个 `~/.claude/skills`
+
+适合你还没有其它 Claude Code skills，或者希望这个仓库直接作为完整 skills 目录：
+
+```bash
+mkdir -p ~/.claude
 git clone https://github.com/CHB-learner/scholarflow-claude-skills.git ~/.claude/skills
 ```
 
-如果 `~/.claude/skills` 里已经有其它 skills，可以 clone 到其它位置，再复制或软链接需要的目录：
+后续更新：
+
+```bash
+cd ~/.claude/skills
+git pull
+```
+
+#### 方式 B：保留已有 `~/.claude/skills`，只安装 ScholarFlow 相关目录
+
+适合你已经有其它 Claude Code skills，不想覆盖整个 skills 目录：
 
 ```bash
 git clone https://github.com/CHB-learner/scholarflow-claude-skills.git ~/scholarflow-claude-skills
+mkdir -p ~/.claude/skills
 cp -R ~/scholarflow-claude-skills/{_shared,daily-papers,daily-papers-fetch,daily-papers-review,daily-papers-notes,paper-reader,topic-research} ~/.claude/skills/
 ```
+
+后续更新：
+
+```bash
+cd ~/scholarflow-claude-skills
+git pull
+cp -R {_shared,daily-papers,daily-papers-fetch,daily-papers-review,daily-papers-notes,paper-reader,topic-research} ~/.claude/skills/
+```
+
+### 3. 确认 Claude Code 能看到 skill
+
+重启 Claude Code，或退出后重新运行：
+
+```bash
+claude
+```
+
+然后在 Claude Code 中输入类似请求：
+
+```text
+调研 RNA 序列设计 方向最近的论文
+读一下 https://arxiv.org/abs/2605.18747
+```
+
+如果 Claude Code 能按 `topic-research` 或 `paper-reader` 的流程响应，说明安装成功。
 
 ## 配置
 
