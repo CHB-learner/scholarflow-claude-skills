@@ -119,37 +119,33 @@ ScholarFlow 会把内容写进你的 Obsidian vault。典型结构如下：
 
 ```text
 {obsidian_vault}/
-├── Dailypaper/
-│   └── 5月/
-│       └── 0519/
-│           ├── 今日论文推荐.md
-│           ├── research-AgenticRL.md
-│           └── _meta/
-│               ├── candidates.json
-│               ├── screening.json
-│               ├── source_diagnostics.json
-│               └── dedup_stats.json
+├── Research_Fields/
+│   └── AgenticRL/
+│       ├── summary.md
+│       ├── _meta/
+│       │   ├── candidates.json
+│       │   ├── screening.json
+│       │   ├── source_diagnostics.json
+│       │   ├── dedup_stats.json
+│       │   └── topic_papers.json
+│       └── papers/
+│           └── Code-as-Agent-Harness/
+│               ├── Code-as-Agent-Harness_en.md
+│               ├── Code-as-Agent-Harness_zh.md
+│               ├── Code-as-Agent-Harness.pdf
+│               └── pngs/
 │
-└── Research_Fields/
-    └── AgenticRL/
-        ├── summary.md
-        ├── _meta/
-        │   └── topic_papers.json
-        └── papers/
-            └── Code-as-Agent-Harness/
-                ├── Code-as-Agent-Harness_en.md
-                ├── Code-as-Agent-Harness_zh.md
-                ├── Code-as-Agent-Harness.pdf
-                └── pngs/
+└── 未分类/
+    ├── summary.md
+    └── papers/
+        └── Unknown-Paper/
+            ├── Unknown-Paper_en.md
+            ├── Unknown-Paper_zh.md
+            ├── Unknown-Paper.pdf
+            └── pngs/
 ```
 
-### 📌 `Dailypaper/`
-
-这里放每日推荐和某次调研的快速导航：
-
-- `今日论文推荐.md`：每日论文推荐入口
-- `research-{方向}.md`：某个研究方向的调研推荐
-- `_meta/`：抓取、去重、筛选的中间记录，方便复盘
+调研研究方向时，不会再创建 `Dailypaper/5月` 这类月份目录。抓取、去重、筛选和候选索引都放在对应方向的 `_meta/` 里。
 
 ### 🧭 `Research_Fields/{方向}/summary.md`
 
@@ -181,6 +177,12 @@ papers/{MethodName}/
 └── pngs/
 ```
 
+如果论文不匹配任何已有方向，会进入 vault 根目录的 `未分类/`：
+
+```text
+{obsidian_vault}/未分类/papers/{MethodName}/
+```
+
 ## 🧪 怎么使用
 
 在 Claude Code 里直接用自然语言触发。
@@ -193,7 +195,7 @@ papers/{MethodName}/
 最近 3 天 RNA design 有什么论文
 ```
 
-输出位置：
+输出位置由每日推荐 skill 管理。研究方向调研不会使用这个目录：
 
 ```text
 {obsidian_vault}/Dailypaper/{月份}/{日期}/
@@ -213,8 +215,9 @@ papers/{MethodName}/
 - 🧹 去重和相关性筛选
 - 🧾 更新 `Research_Fields/{方向}/summary.md`
 - 🗃️ 写入 `Research_Fields/{方向}/_meta/topic_papers.json`
+- 📦 中间产物也放在 `Research_Fields/{方向}/_meta/`
 
-不会自动精读，也不会自动生成深度笔记。
+不会自动精读，不会自动生成深度笔记，也不会创建 `Dailypaper/5月` 这类月份目录。
 
 ### 3. 📖 精读指定论文
 
@@ -235,7 +238,7 @@ Research_Fields/{方向}/papers/{MethodName}/
 如果这篇论文和已有研究方向都不匹配，会自动放到：
 
 ```text
-Research_Fields/未分类/papers/{MethodName}/
+未分类/papers/{MethodName}/
 ```
 
 输出格式和其它研究方向完全一样。

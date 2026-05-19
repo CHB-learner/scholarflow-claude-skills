@@ -3,6 +3,7 @@
 generate_research_field_mocs.py
 
 为 Research_Fields 下的每个研究方向生成 summary.md 索引页。
+同时兼容 vault 根目录下的 未分类/ 论文目录。
 每个方向的 summary.md 记录该方向下所有已保存的论文。
 
 目录结构:
@@ -91,7 +92,8 @@ def build_research_field_mocs(vault_path: Path) -> dict:
     rf_folder = config.get("paths", {}).get("research_fields_folder", "Research_Fields")
     rf_path = vault_path / rf_folder
 
-    if not rf_path.exists():
+    uncategorized_path = vault_path / "未分类"
+    if not rf_path.exists() and not uncategorized_path.exists():
         print(f"[warn] Research_Fields folder not found: {rf_path}")
         return {"status": "skipped", "reason": "folder not found"}
 
@@ -103,11 +105,7 @@ def build_research_field_mocs(vault_path: Path) -> dict:
         "updated_files": 0,
     }
 
-    # Scan each research field subdirectory
-    for field_dir in sorted(rf_path.iterdir()):
-        if not field_dir.is_dir() or field_dir.name.startswith("."):
-            continue
-
+    for field_dir in _iter_research_field_dirs(vault_path, rf_path):
         result["research_fields"] += 1
         field_name = field_dir.name
 
@@ -146,6 +144,21 @@ def build_research_field_mocs(vault_path: Path) -> dict:
             result["created_files"] += 1
 
     return result
+
+
+def _iter_research_field_dirs(vault_path: Path, rf_path: Path) -> list[Path]:
+    """Return normal research fields plus the root-level uncategorized field."""
+    field_dirs = []
+    if rf_path.exists():
+        field_dirs.extend(
+            field_dir
+            for field_dir in sorted(rf_path.iterdir())
+            if field_dir.is_dir() and not field_dir.name.startswith(".")
+        )
+    uncategorized_dir = vault_path / "未分类"
+    if uncategorized_dir.exists() and uncategorized_dir.is_dir() and uncategorized_dir not in field_dirs:
+        field_dirs.append(uncategorized_dir)
+    return field_dirs
 
 
 def _build_summary_content(field_name: str, managed_block: str) -> str:

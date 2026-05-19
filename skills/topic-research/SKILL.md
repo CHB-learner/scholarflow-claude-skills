@@ -27,7 +27,6 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 显式生成以下变量：
 - `VAULT_PATH` — Obsidian 库根目录（不含 "papers" 后缀）
 - `RESEARCH_FIELDS_PATH` — 研究方向目录 `{VAULT_PATH}/Research_Fields`
-- `DAILY_PAPERS_PATH` — 每日推荐目录 `{VAULT_PATH}/Dailypaper`
 - `SAVE_MODE` = `"research_field"`（表示保存到领域目录）
 
 ## Step 1: 解析用户意图
@@ -67,11 +66,13 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 
 读取现有 `user-config.json`，更新 `research_fields["{主题}"]`，写回。
 
-## Step 4: 多源抓取论文
+## Step 4: 创建研究方向目录并多源抓取论文
 
 ```bash
-META_DIR="{DAILY_PAPERS_PATH}/{月份}/{DD}/_meta"
-mkdir -p "$META_DIR"
+FIELD_DIR="{VAULT_PATH}/Research_Fields/{主题}"
+PAPERS_DIR="{FIELD_DIR}/papers"
+META_DIR="{FIELD_DIR}/_meta"
+mkdir -p "$PAPERS_DIR" "$META_DIR"
 python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
   --topic "{主题}" \
   --queries-json '["{关键词1}", "{关键词2}", "{关键词3}"]' \
@@ -84,6 +85,8 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
 读取 `$META_DIR/candidates.json`，获取规范化、去重、排序后的候选论文。检查 `$META_DIR/source_diagnostics.json` 和 `$META_DIR/dedup_stats.json`，把来源失败和去重情况写入调研记录。
 
 禁止用 ad hoc `for 365 days`、单独 arXiv/HF 循环脚本直接生成 `summary.md`。这些脚本会绕过 ScholarFlow 的去重、筛选、summary 增量更新和候选上限，容易产生几百行噪声候选。
+
+调研方向时不要创建 `Dailypaper/{月份}`、`Dailypaper/{月份}/{DD}` 或其 `_meta` 目录；调研相关中间产物只放在 `{FIELD_DIR}/_meta/`。
 
 ## Step 5: Claude 筛选与点评（风格：毒舌但精准）
 
@@ -114,17 +117,7 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
 
 ## Step 6: 保存候选索引并更新 Research_Fields
 
-### 6a. 创建目录结构
-
-```bash
-FIELD_DIR="{VAULT_PATH}/Research_Fields/{主题}"
-PAPERS_DIR="{FIELD_DIR}/papers"
-mkdir -p "{PAPERS_DIR}" "{FIELD_DIR}/_meta"
-```
-
-调研阶段只创建目录和候选索引，不在 `papers/` 下创建论文笔记目录。
-
-### 6b. 保存候选索引
+### 6a. 保存候选索引
 
 把筛选后排名最高的最多 50 篇 `core` 和 `adjacent` 相关论文写入：
 
@@ -153,7 +146,9 @@ mkdir -p "{PAPERS_DIR}" "{FIELD_DIR}/_meta"
 
 标准候选索引路径是 `{FIELD_DIR}/_meta/topic_papers.json`。不要把新的候选索引写到 `{FIELD_DIR}/topic_papers.json`；根目录旧文件只作为兼容输入。
 
-### 6c. 更新研究方向 summary
+调研阶段只创建目录和候选索引，不在 `papers/` 下创建论文笔记目录。
+
+### 6b. 更新研究方向 summary
 
 路径：`{FIELD_DIR}/summary.md`（增量更新，禁止整文件覆写）
 
@@ -218,48 +213,12 @@ papers/ 目录下每篇论文的结构：
 └── {论文名}.pdf
 ```
 
-### 6d. 保存快速导航推荐文件
-
-同时在 Dailypaper 目录下生成一个快速导航文件：
-
-路径：`{DAILY_PAPERS_PATH}/{月份}/{DD}/research-{主题}.md`
-
-内容：
-```markdown
----
-date: {YYYY-MM-DD}
-topic: {主题}
-keywords: [{关键词列表}]
-tags: [topic-research, auto-generated]
----
-
-# {主题} 论文推荐
-
-调研时间：{YYYY-MM-DD} | 关键词：{主题}
-
-## 分流表
-
-| 等级 | 论文 | 笔记 |
-|------|------|------|
-| 🔥 必读 | [[论文名]] | 待精读 |
-...
-
-## 论文点评
-
-### 1. {论文标题}
-- **链接**: [arXiv](url) | [PDF](pdf_url)
-- **核心方法**: ...
-- **锐评**: ...
-- 💡 **想精读？** 运行：`读一下 {论文标题}` 或 `精读 {论文标题}`
-...
-```
-
 ## Step 7: 完成后告知用户
 
 告知用户：
 - 抓取到多少篇候选，筛选出多少篇 `core/adjacent`
-- 推荐文件保存在：`Dailypaper/{月份}/{DD}/research-{主题}.md`
 - 候选索引保存在：`Research_Fields/{主题}/_meta/topic_papers.json`
+- 抓取、去重、筛选诊断文件保存在：`Research_Fields/{主题}/_meta/`
 - summary 已更新，未精读论文显示为 `待精读`
 - summary 备注列已留空，供用户人工填写
 - 运行下一步：`读一下 {论文标题}` 或 `精读 {论文标题}` 可以精读指定论文
@@ -269,6 +228,7 @@ tags: [topic-research, auto-generated]
 - **不要先要求用户确认关键词**，LLM 生成的就是要用的
 - **不要只生成关键词就停下**，继续跑到候选索引和 summary 更新完成
 - **调研阶段不调用 paper-reader，不精读论文，不下载 PDF，不抽图**
+- **调研阶段不要创建 `Dailypaper/{月份}` 文件夹；中间产物统一放到研究方向 `_meta/` 下**
 - **不要把临时脚本结果直接写入 summary.md；必须走 `_meta/topic_papers.json` + summary 生成器**
 - **不要自动写 summary 备注列；备注由用户人工维护**
 - 主题模糊时，关键词应偏宽泛而非狭窄

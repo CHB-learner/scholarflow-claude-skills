@@ -16,7 +16,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 # 学术论文阅读助手 (Paper Reader)
 
 专注学术论文深度阅读，生成**中英双语深度笔记**。
-笔记保存在 `Research_Fields/{方向}/papers/{论文名}/` 下。
+已匹配研究方向的笔记保存在 `Research_Fields/{方向}/papers/{论文名}/` 下；未匹配任何方向的笔记保存在 `{VAULT_PATH}/未分类/papers/{论文名}/` 下。
 
 ## 核心原则：深度优先
 
@@ -137,19 +137,29 @@ pdfimages -png {pdf_path} pngs/
 2. 如果用户给出的论文和某个 `research_fields` 关键词明显匹配，保存到该方向。
 3. 如果用户冷不丁说 `读一下 XXX`，且论文与已有研究方向都不匹配，不要中断、不要反复追问方向；自动归入 `未分类`。
 
-未匹配论文的默认保存方向固定为：
+未匹配论文的默认保存路径固定为 vault 根目录下的 `未分类`，不是 `Research_Fields/未分类`：
 
 ```text
-Research_Fields/未分类/papers/{MethodName}/
+{VAULT_PATH}/未分类/papers/{MethodName}/
 ```
 
-如果 `Research_Fields/未分类/` 或其 `papers/` 子目录不存在，先创建它们。该目录下的输出格式、文件命名、PDF、图片、EN/ZH 笔记要求与普通研究方向完全一致。写完后也要刷新 `未分类/summary.md`，让该论文出现在自动论文列表里。
+如果 `{VAULT_PATH}/未分类/` 或其 `papers/` 子目录不存在，先创建它们。该目录下的输出格式、文件命名、PDF、图片、EN/ZH 笔记要求与普通研究方向完全一致。写完后也要刷新 `{VAULT_PATH}/未分类/summary.md`，让该论文出现在自动论文列表里。
 
 ### 保存目录结构
 
 **文件名格式（必须使用方法缩写作为前缀）**：
 ```
 {VAULT_PATH}/Research_Fields/{方向}/papers/{MethodName}/
+├── pngs/           # 图片目录（必须）
+├── {MethodName}_en.md   # 英文深度笔记（必须）
+├── {MethodName}_zh.md   # 中文深度笔记（必须）
+└── {MethodName}.pdf     # PDF 原文（必须）
+```
+
+未分类论文使用同样的文件结构，只是根目录不同：
+
+```
+{VAULT_PATH}/未分类/papers/{MethodName}/
 ├── pngs/           # 图片目录（必须）
 ├── {MethodName}_en.md   # 英文深度笔记（必须）
 ├── {MethodName}_zh.md   # 中文深度笔记（必须）
