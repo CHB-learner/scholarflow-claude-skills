@@ -22,11 +22,11 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 
 ## Step 0: 读取共享配置
 
-读取 `../_shared/user-config.json`（和 `user-config.local.json` 如果存在）。
+读取 `../_shared/user-config.json`（和 `user-config.local.json` 如果存在）。配置同时兼容新格式 `vault/folders/daily/fields/zotero` 和旧格式 `paths/daily_papers/research_fields`。
 
 显式生成以下变量：
-- `VAULT_PATH` — Obsidian 库根目录（不含 "papers" 后缀）
-- `RESEARCH_FIELDS_PATH` — 研究方向目录 `{VAULT_PATH}/Research_Fields`
+- `VAULT_PATH` — Obsidian 输出根目录
+- `RESEARCH_FIELDS_PATH` — 研究方向目录 `{VAULT_PATH}/{research_fields_folder}`，默认 `{VAULT_PATH}/Research_Fields`
 - `SAVE_MODE` = `"research_field"`（表示保存到领域目录）
 
 ## Step 1: 解析用户意图
@@ -62,9 +62,9 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 
 ## Step 3: 保存关键词到 user-config.json
 
-将关键词写入 `user-config.json` 的 `research_fields` 字段。如果该主题已存在则覆盖。
+将关键词写入配置的研究方向字段。如果使用新格式，更新 `fields["{主题}"]`；如果使用旧格式，更新 `research_fields["{主题}"]`。如果该主题已存在则覆盖。
 
-读取现有 `user-config.json`，更新 `research_fields["{主题}"]`，写回。
+读取现有配置，尽量只更新对应主题的关键词，不要重写用户的其它配置项。
 
 ## Step 4: 创建研究方向目录并多源抓取论文
 

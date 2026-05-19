@@ -16,7 +16,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 # 学术论文阅读助手 (Paper Reader)
 
 专注学术论文深度阅读，生成**中英双语深度笔记**。
-已匹配研究方向的笔记保存在 `Research_Fields/{方向}/papers/{论文名}/` 下；未匹配任何方向的笔记保存在 `{VAULT_PATH}/未分类/papers/{论文名}/` 下。
+已匹配研究方向的笔记保存在 `Research_Fields/{方向}/papers/{论文名}/` 下；未匹配任何方向的笔记保存在 `{UNCATEGORIZED_PATH}/papers/{论文名}/` 下，默认是 `{VAULT_PATH}/未分类/papers/{论文名}/`。
 
 ## 核心原则：深度优先
 
@@ -33,13 +33,14 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 
 ## Step 0: 读取共享配置
 
-先读取 `../_shared/user-config.json`，如果 `../_shared/user-config.local.json` 存在，再用它覆盖默认值。
+先读取 `../_shared/user-config.json`，如果 `../_shared/user-config.local.json` 存在，再用它覆盖默认值。配置同时兼容新格式 `vault/folders/daily/fields/zotero` 和旧格式 `paths/daily_papers/research_fields`。
 
 显式生成并在后续统一使用这些变量：
 
 - `VAULT_PATH` — Obsidian 库根目录
 - `RESEARCH_FIELDS_PATH` — 研究方向目录 `{VAULT_PATH}/{research_fields_folder}`
 - `DAILY_PAPERS_PATH` — 每日推荐目录 `{VAULT_PATH}/{daily_papers_folder}`
+- `UNCATEGORIZED_PATH` — 未分类论文目录 `{VAULT_PATH}/{uncategorized_folder}`，默认 `{VAULT_PATH}/未分类`
 - `ZOTERO_DB` — Zotero 数据库路径
 - `ZOTERO_STORAGE` — Zotero 存储路径
 - `AUTO_REFRESH_INDEXES` — 是否自动刷新索引
@@ -130,20 +131,26 @@ pdfimages -png {pdf_path} pngs/
 
 ### 匹配 research_fields
 
-读取 `user-config.json` 中的 `research_fields` 字段，匹配论文方向。
+读取配置中的 `fields` 或 `research_fields` 字段，匹配论文方向。
 
 方向匹配顺序：
 1. 优先从用户当前上下文、当前打开的 `Research_Fields/{方向}/summary.md`、`_meta/topic_papers.json` 中匹配论文标题、方法名、arXiv ID 或 DOI。
 2. 如果用户给出的论文和某个 `research_fields` 关键词明显匹配，保存到该方向。
 3. 如果用户冷不丁说 `读一下 XXX`，且论文与已有研究方向都不匹配，不要中断、不要反复追问方向；自动归入 `未分类`。
 
-未匹配论文的默认保存路径固定为 vault 根目录下的 `未分类`，不是 `Research_Fields/未分类`：
+未匹配论文的默认保存路径是 vault 根目录下的未分类目录，不是 `Research_Fields/未分类`。目录名优先使用 `folders.uncategorized` / `paths.uncategorized_folder`，未配置时默认 `未分类`：
+
+```text
+{UNCATEGORIZED_PATH}/papers/{MethodName}/
+```
+
+默认展开后是：
 
 ```text
 {VAULT_PATH}/未分类/papers/{MethodName}/
 ```
 
-如果 `{VAULT_PATH}/未分类/` 或其 `papers/` 子目录不存在，先创建它们。该目录下的输出格式、文件命名、PDF、图片、EN/ZH 笔记要求与普通研究方向完全一致。写完后也要刷新 `{VAULT_PATH}/未分类/summary.md`，让该论文出现在自动论文列表里。
+如果 `UNCATEGORIZED_PATH` 或其 `papers/` 子目录不存在，先创建它们。该目录下的输出格式、文件命名、PDF、图片、EN/ZH 笔记要求与普通研究方向完全一致。写完后也要刷新 `{UNCATEGORIZED_PATH}/summary.md`，让该论文出现在自动论文列表里。
 
 ### 保存目录结构
 
@@ -159,7 +166,7 @@ pdfimages -png {pdf_path} pngs/
 未分类论文使用同样的文件结构，只是根目录不同：
 
 ```
-{VAULT_PATH}/未分类/papers/{MethodName}/
+{UNCATEGORIZED_PATH}/papers/{MethodName}/
 ├── pngs/           # 图片目录（必须）
 ├── {MethodName}_en.md   # 英文深度笔记（必须）
 ├── {MethodName}_zh.md   # 中文深度笔记（必须）

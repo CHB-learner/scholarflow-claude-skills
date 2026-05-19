@@ -45,7 +45,123 @@ class ConfigCompatibilityTests(unittest.TestCase):
                 self.assertEqual(user_config.daily_papers_dir(), config_dir / "vault" / "Dailypaper")
                 self.assertEqual(user_config.research_fields_dir(), config_dir / "vault" / "Research_Fields")
                 self.assertEqual(user_config.paper_notes_dir(), config_dir / "vault" / "Research_Fields")
+                self.assertEqual(user_config.uncategorized_dir(), config_dir / "vault" / "未分类")
                 self.assertEqual(user_config.concepts_dir(), config_dir / "vault" / "Concepts")
+
+    def test_compact_config_maps_to_existing_accessors_and_local_overrides(self):
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            config_dir = Path(tmp)
+            old_vault = config_dir / "old-vault"
+            new_vault = config_dir / "new-vault"
+            (config_dir / "user-config.json").write_text(
+                json.dumps(
+                    {
+                        "paths": {
+                            "obsidian_vault": str(old_vault),
+                            "daily_papers_folder": "OldDaily",
+                            "research_fields_folder": "OldFields",
+                            "zotero_db": "~/Old/zotero.sqlite",
+                            "zotero_storage": "~/Old/storage",
+                        },
+                        "research_fields": {"旧方向": ["old field"]},
+                        "daily_papers": {"keywords": ["old keyword"]},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (config_dir / "user-config.local.json").write_text(
+                json.dumps(
+                    {
+                        "vault": str(new_vault),
+                        "folders": {
+                            "daily": "Dailypaper",
+                            "research": "Research_Fields",
+                            "uncategorized": "未分类",
+                        },
+                        "daily": {"keywords": ["RNA design", "LLM agent"]},
+                        "fields": {
+                            "RNA序列设计": ["RNA sequence design", "mRNA design"],
+                            "AgenticRL": ["agentic RL", "LLM agent reinforcement learning"],
+                        },
+                        "zotero": {
+                            "db": "~/Zotero/zotero.sqlite",
+                            "storage": "~/Zotero/storage",
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                self.assertEqual(user_config.obsidian_vault_path(), new_vault)
+                self.assertEqual(user_config.daily_papers_dir(), new_vault / "Dailypaper")
+                self.assertEqual(user_config.research_fields_dir(), new_vault / "Research_Fields")
+                self.assertEqual(user_config.paper_notes_dir(), new_vault / "Research_Fields")
+                self.assertEqual(user_config.uncategorized_dir(), new_vault / "未分类")
+                self.assertEqual(user_config.daily_papers_config()["keywords"], ["RNA design", "LLM agent"])
+                self.assertEqual(
+                    user_config.research_fields_config(),
+                    {
+                        "RNA序列设计": ["RNA sequence design", "mRNA design"],
+                        "AgenticRL": ["agentic RL", "LLM agent reinforcement learning"],
+                    },
+                )
+                self.assertEqual(user_config.zotero_db_path(), Path("~/Zotero/zotero.sqlite").expanduser())
+                self.assertEqual(user_config.zotero_storage_dir(), Path("~/Zotero/storage").expanduser())
+
+    def test_legacy_local_config_can_override_compact_base_config(self):
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            config_dir = Path(tmp)
+            base_vault = config_dir / "base-vault"
+            local_vault = config_dir / "local-vault"
+            (config_dir / "user-config.json").write_text(
+                json.dumps(
+                    {
+                        "vault": str(base_vault),
+                        "folders": {
+                            "daily": "BaseDaily",
+                            "research": "BaseFields",
+                            "uncategorized": "BaseUncategorized",
+                        },
+                        "daily": {"keywords": ["base keyword"]},
+                        "fields": {"基础方向": ["base field"]},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (config_dir / "user-config.local.json").write_text(
+                json.dumps(
+                    {
+                        "paths": {
+                            "obsidian_vault": str(local_vault),
+                            "daily_papers_folder": "Dailypaper",
+                            "research_fields_folder": "Research_Fields",
+                            "uncategorized_folder": "未分类",
+                        },
+                        "daily_papers": {"keywords": ["local keyword"]},
+                        "research_fields": {"本地方向": ["local field"]},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                self.assertEqual(user_config.obsidian_vault_path(), local_vault)
+                self.assertEqual(user_config.daily_papers_dir(), local_vault / "Dailypaper")
+                self.assertEqual(user_config.research_fields_dir(), local_vault / "Research_Fields")
+                self.assertEqual(user_config.uncategorized_dir(), local_vault / "未分类")
+                self.assertEqual(user_config.daily_papers_config()["keywords"], ["local keyword"])
+                self.assertEqual(user_config.research_fields_config(), {"本地方向": ["local field"]})
 
 
 class PaperPipelineTests(unittest.TestCase):

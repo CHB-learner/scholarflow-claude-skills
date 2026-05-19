@@ -31,7 +31,7 @@ _SHARED_DIR = _SCRIPT_DIR.parent / "_shared"
 if str(_SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(_SHARED_DIR))
 
-from user_config import paths_config, load_user_config
+from user_config import paths_config, load_user_config, uncategorized_dir
 
 
 PAPER_LIST_START = "<!-- scholarflow:paper-list:start -->"
@@ -92,7 +92,7 @@ def build_research_field_mocs(vault_path: Path) -> dict:
     rf_folder = config.get("paths", {}).get("research_fields_folder", "Research_Fields")
     rf_path = vault_path / rf_folder
 
-    uncategorized_path = vault_path / "未分类"
+    uncategorized_path = uncategorized_dir(vault_path)
     if not rf_path.exists() and not uncategorized_path.exists():
         print(f"[warn] Research_Fields folder not found: {rf_path}")
         return {"status": "skipped", "reason": "folder not found"}
@@ -155,9 +155,9 @@ def _iter_research_field_dirs(vault_path: Path, rf_path: Path) -> list[Path]:
             for field_dir in sorted(rf_path.iterdir())
             if field_dir.is_dir() and not field_dir.name.startswith(".")
         )
-    uncategorized_dir = vault_path / "未分类"
-    if uncategorized_dir.exists() and uncategorized_dir.is_dir() and uncategorized_dir not in field_dirs:
-        field_dirs.append(uncategorized_dir)
+    uncategorized_path = uncategorized_dir(vault_path)
+    if uncategorized_path.exists() and uncategorized_path.is_dir() and uncategorized_path not in field_dirs:
+        field_dirs.append(uncategorized_path)
     return field_dirs
 
 

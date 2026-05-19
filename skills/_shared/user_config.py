@@ -30,6 +30,7 @@ DEFAULT_CONFIG = {
         "obsidian_vault": "~/ObsidianVault",
         "daily_papers_folder": "DailyPapers",
         "research_fields_folder": "Research_Fields",
+        "uncategorized_folder": "未分类",
         "paper_notes_folder": "",
         "concepts_folder": "Concepts",
         "zotero_db": "~/Zotero/zotero.sqlite",
@@ -136,10 +137,48 @@ def load_user_config() -> dict:
         with config_path.open("r", encoding="utf-8") as f:
             loaded = json.load(f)
         if isinstance(loaded, dict):
+            loaded = copy.deepcopy(loaded)
+            _apply_simplified_config(loaded)
+            replace_research_fields = loaded.pop("research_fields", None) if "research_fields" in loaded else None
             _deep_merge(config, loaded)
+            if replace_research_fields is not None:
+                config["research_fields"] = replace_research_fields
 
     _apply_legacy_compat(config)
     return config
+
+
+def _apply_simplified_config(config: dict) -> None:
+    """Map the user-facing compact config keys onto the legacy internal shape."""
+    paths = config.setdefault("paths", {})
+
+    if config.get("vault"):
+        paths["obsidian_vault"] = config["vault"]
+
+    folders = config.get("folders") or {}
+    if isinstance(folders, dict):
+        if folders.get("daily"):
+            paths["daily_papers_folder"] = folders["daily"]
+        if folders.get("research"):
+            paths["research_fields_folder"] = folders["research"]
+        if folders.get("uncategorized"):
+            paths["uncategorized_folder"] = folders["uncategorized"]
+
+    daily = config.get("daily") or {}
+    if isinstance(daily, dict):
+        daily_papers = config.setdefault("daily_papers", {})
+        _deep_merge(daily_papers, daily)
+
+    fields = config.get("fields")
+    if isinstance(fields, dict):
+        config["research_fields"] = fields
+
+    zotero = config.get("zotero") or {}
+    if isinstance(zotero, dict):
+        if zotero.get("db"):
+            paths["zotero_db"] = zotero["db"]
+        if zotero.get("storage"):
+            paths["zotero_storage"] = zotero["storage"]
 
 
 def _apply_legacy_compat(config: dict) -> None:
@@ -158,6 +197,8 @@ def _apply_legacy_compat(config: dict) -> None:
         paths["paper_notes_folder"] = paths.get("research_fields_folder", "Research_Fields")
     if not paths.get("concepts_folder"):
         paths["concepts_folder"] = "Concepts"
+    if not paths.get("uncategorized_folder"):
+        paths["uncategorized_folder"] = "未分类"
 
 
 def _expand(path_value: str) -> Path:
@@ -194,6 +235,13 @@ def research_fields_dir() -> Path:
 
 def paper_notes_dir() -> Path:
     return obsidian_vault_path() / paths_config()["paper_notes_folder"]
+
+
+def uncategorized_dir(vault_path: Path | None = None) -> Path:
+    folder = _expand(paths_config()["uncategorized_folder"])
+    if folder.is_absolute():
+        return folder
+    return (vault_path or obsidian_vault_path()) / folder
 
 
 def concepts_dir() -> Path:
