@@ -281,6 +281,273 @@ class ResearchFieldMocTests(unittest.TestCase):
             self.assertIn("<!-- scholarflow:paper-list:start -->", content)
             self.assertIn("| 2026.05.01 | [BeeRNA]", content)
 
+    def test_topic_candidate_index_adds_pending_papers_to_summary(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_topic_papers(
+                vault,
+                "RNA",
+                [
+                    {
+                        "title": "RiboSphere: Learning Unified RNA Representations",
+                        "method_name": "RiboSphere",
+                        "date": "2026-03-20",
+                        "url": "https://arxiv.org/abs/2603.19636",
+                        "code_url": "https://github.com/example/ribosphere",
+                        "label": "core",
+                        "reason": "统一 RNA 结构表示，适合后续精读",
+                        "note_status": "pending",
+                    }
+                ],
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                result = generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
+            self.assertEqual(result["papers_found"], 1)
+            self.assertIn("该研究方向下共有 **1** 篇论文。", content)
+            self.assertIn("| 2026.03.20 | [RiboSphere](https://arxiv.org/abs/2603.19636) | 待精读 | [GitHub](https://github.com/example/ribosphere) | [arXiv](https://arxiv.org/abs/2603.19636) |  |", content)
+            self.assertNotIn("统一 RNA 结构表示，适合后续精读", content)
+
+    def test_topic_candidate_and_existing_note_deduplicate_to_done_status(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_note(vault, "RNA", "BeeRNA")
+            self._write_topic_papers(
+                vault,
+                "RNA",
+                [
+                    {
+                        "title": "BeeRNA: Benchmarking RNA design",
+                        "method_name": "BeeRNA",
+                        "date": "2025-11-26",
+                        "url": "https://arxiv.org/abs/2511.21781",
+                        "label": "core",
+                        "reason": "已有笔记时保留调研理由",
+                        "note_status": "pending",
+                    }
+                ],
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
+            self.assertEqual(content.count("| 2026.05.01 | [BeeRNA]"), 1)
+            self.assertIn("[EN](obsidian://open?", content)
+            self.assertIn("[ZH](obsidian://open?", content)
+            self.assertNotIn("已有笔记时保留调研理由", content)
+            self.assertNotIn("| 待精读 |", content)
+
+    def test_candidate_code_url_is_extracted_from_abstract(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_topic_papers(
+                vault,
+                "RNA",
+                [
+                    {
+                        "title": "CodeRNA Agentic RNA Design",
+                        "date": "2026-05-18",
+                        "url": "https://arxiv.org/abs/2605.12345v1",
+                        "abstract": "Code is available at https://github.com/example/coderna.",
+                        "note_status": "pending",
+                    }
+                ],
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
+            self.assertIn("[CodeRNA Agentic RNA Design](https://arxiv.org/abs/2605.12345)", content)
+            self.assertIn("[GitHub](https://github.com/example/coderna)", content)
+
+    def test_excluded_topic_candidates_do_not_enter_summary(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_topic_papers(
+                vault,
+                "RNA",
+                [
+                    {
+                        "title": "Relevant Agentic RL",
+                        "method_name": "RelevantAgent",
+                        "date": "2026-05-18",
+                        "url": "https://arxiv.org/abs/2605.22222",
+                        "label": "core",
+                        "note_status": "pending",
+                    },
+                    {
+                        "title": "Excluded Clickbait",
+                        "method_name": "Clickbait",
+                        "date": "2026-05-18",
+                        "url": "https://arxiv.org/abs/2605.33333",
+                        "label": "exclude",
+                        "note_status": "pending",
+                    },
+                ],
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                result = generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
+            self.assertEqual(result["papers_found"], 1)
+            self.assertIn("RelevantAgent", content)
+            self.assertNotIn("Clickbait", content)
+
+    def test_legacy_root_topic_papers_json_is_supported(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            field_dir = vault / "Research_Fields" / "RNA"
+            (field_dir / "topic_papers.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "title": "RootIndex: Legacy Candidate",
+                            "method_name": "RootIndex",
+                            "date": "2026-05-18",
+                            "url": "https://arxiv.org/abs/2605.11111",
+                            "note_status": "pending",
+                        }
+                    ],
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                result = generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (field_dir / "summary.md").read_text(encoding="utf-8")
+            self.assertEqual(result["papers_found"], 1)
+            self.assertIn("[RootIndex](https://arxiv.org/abs/2605.11111)", content)
+
+    def test_arxiv_versioned_candidates_are_deduplicated(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_topic_papers(
+                vault,
+                "RNA",
+                [
+                    {
+                        "title": "Versioned Agent Paper",
+                        "method_name": "Versioned",
+                        "date": "2026-05-18",
+                        "url": "https://arxiv.org/abs/2605.18747v1",
+                        "note_status": "pending",
+                    },
+                    {
+                        "title": "Versioned Agent Paper",
+                        "method_name": "Versioned",
+                        "date": "2026-05-18",
+                        "url": "https://arxiv.org/abs/2605.18747",
+                        "note_status": "pending",
+                    },
+                ],
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                result = generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
+            self.assertEqual(result["papers_found"], 1)
+            self.assertEqual(content.count("Versioned"), 1)
+
+    def test_summary_limits_topic_candidates_to_fifty_rows(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_topic_papers(
+                vault,
+                "RNA",
+                [
+                    {
+                        "title": f"Candidate {i}",
+                        "method_name": f"Candidate{i:02d}",
+                        "date": f"2026-05-{(i % 28) + 1:02d}",
+                        "url": f"https://arxiv.org/abs/2605.{i:05d}",
+                        "note_status": "pending",
+                    }
+                    for i in range(60)
+                ],
+            )
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                result = generate_research_field_mocs.build_research_field_mocs(vault)
+                second = generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
+            data_rows = [
+                line
+                for line in content.splitlines()
+                if line.startswith("| 2026.") and "Candidate" in line
+            ]
+            self.assertEqual(result["papers_found"], 50)
+            self.assertEqual(len(data_rows), 50)
+            self.assertEqual(second["updated_files"], 0)
+
+    def test_legacy_root_note_directories_are_included(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_note(vault, "RNA", "RiboSphere", legacy_root=True)
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                generate_research_field_mocs.build_research_field_mocs(vault)
+
+            content = (vault / "Research_Fields" / "RNA" / "summary.md").read_text(encoding="utf-8")
+            self.assertIn("| 2026.05.01 | [RiboSphere]", content)
+            self.assertIn("file=RiboSphere/RiboSphere.pdf", content)
+            self.assertIn("file=RiboSphere/RiboSphere_en", content)
+
+    def test_skill_docs_make_topic_research_lightweight_and_require_named_read(self):
+        topic_skill = (SKILLS_ROOT / "topic-research" / "SKILL.md").read_text(encoding="utf-8")
+        paper_reader_skill = (SKILLS_ROOT / "paper-reader" / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("不调用 paper-reader", topic_skill)
+        self.assertIn("topic_papers.json", topic_skill)
+        self.assertIn("最多 50 篇", topic_skill)
+        self.assertIn("备注列永远留空", topic_skill)
+        self.assertIn("不要写临时全量抓取脚本直接刷新 summary", topic_skill)
+        self.assertNotIn("## Step 7: 生成笔记", topic_skill)
+        self.assertIn("`读一下` 不带论文名", paper_reader_skill)
+        self.assertIn("不启动深读", paper_reader_skill)
+
     def _make_vault(self, tmp: str) -> tuple[Path, Path]:
         root = Path(tmp)
         vault = root / "vault"
@@ -301,8 +568,9 @@ class ResearchFieldMocTests(unittest.TestCase):
         )
         return vault, config_dir
 
-    def _write_note(self, vault: Path, field_name: str, method_name: str) -> None:
-        paper_dir = vault / "Research_Fields" / field_name / "papers" / method_name
+    def _write_note(self, vault: Path, field_name: str, method_name: str, legacy_root: bool = False) -> None:
+        field_dir = vault / "Research_Fields" / field_name
+        paper_dir = field_dir / method_name if legacy_root else field_dir / "papers" / method_name
         paper_dir.mkdir(parents=True, exist_ok=True)
         (paper_dir / f"{method_name}_en.md").write_text(
             "\n".join(
@@ -321,6 +589,14 @@ class ResearchFieldMocTests(unittest.TestCase):
         )
         (paper_dir / f"{method_name}_zh.md").write_text(f"# {method_name}\n", encoding="utf-8")
         (paper_dir / f"{method_name}.pdf").write_bytes(b"%PDF-1.4\n")
+
+    def _write_topic_papers(self, vault: Path, field_name: str, papers: list[dict]) -> None:
+        meta_dir = vault / "Research_Fields" / field_name / "_meta"
+        meta_dir.mkdir(parents=True, exist_ok=True)
+        (meta_dir / "topic_papers.json").write_text(
+            json.dumps(papers, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
 
 class ScriptEntrypointTests(unittest.TestCase):

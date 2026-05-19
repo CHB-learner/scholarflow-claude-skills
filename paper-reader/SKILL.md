@@ -5,7 +5,8 @@ description: |
   "读论文", "分析文献", "帮我看一下这篇paper", "论文笔记", or provides a PDF file
   that appears to be an academic paper.
 
-  **重要触发词**: "读一下 XXX"、"读一下这篇"、"帮我读" → 必须调用此 skill
+  **重要触发词**: "读一下 XXX"、"精读 XXX"、"生成笔记 XXX"、"帮我读 XXX" → 必须调用此 skill
+  **不要触发**: 用户只说"读一下"但没有给论文名、链接或 PDF 时，不启动深读；先列出 summary 中待精读候选让用户选择。
 context: fork
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 ---
@@ -46,6 +47,18 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 - `GIT_PUSH_ENABLED` — 是否自动 git push（仅在 GIT_COMMIT_ENABLED=true 时有效）
 
 ## 1. 接收论文
+
+### 触发保护
+
+`读一下` 不带论文名、arXiv 链接或 PDF 路径时，不启动深读，不下载 PDF，不调用任何提取图片/全文的流程。
+
+此时应该：
+1. 读取当前相关 `Research_Fields/{方向}/summary.md` 或 `_meta/topic_papers.json`
+2. 列出 `待精读` / `note_status=pending` 的候选论文
+3. 提醒用户使用 `读一下 {论文标题}`、`精读 {论文标题}` 或 `生成笔记 {论文标题}` 指定一篇论文
+4. 停止，不要自行选择下一篇
+
+只有用户明确给出论文标题、方法名、arXiv 链接、DOI、URL 或 PDF 路径时，才开始下面的深度阅读流程。
 
 | 输入方式 | 示例 | 处理方法 |
 |----------|------|----------|

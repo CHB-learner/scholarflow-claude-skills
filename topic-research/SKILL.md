@@ -2,8 +2,8 @@
 name: topic-research
 description: |
   用户说"调研XXX领域的文章"、"帮我搜索XXX相关论文"、"我想了解一下XXX方向"时使用。
-  根据用户输入的主题，用 LLM 生成多样化检索关键词，然后自动抓取、点评、生成笔记。
-  全自动流水线，无需用户干预。
+  根据用户输入的主题，用 LLM 生成多样化检索关键词，然后自动抓取、点评、更新 summary 候选列表。
+  调研阶段不精读论文，不调用 paper-reader，不下载 PDF，不抽图。
 
   **触发词**：调研、搜索、了解、看看XX方向、XX领域文章
 context: fork
@@ -14,7 +14,11 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 
 # 主题调研（LLM 生成关键词版）
 
-根据用户描述的主题，Claude 自动理解意图并生成多样化检索关键词，然后跑完多源抓取 → 规范化去重 → 相关性筛选 → 点评 → 笔记流水线。
+根据用户描述的主题，Claude 自动理解意图并生成多样化检索关键词，然后跑完多源抓取 → 规范化去重 → 相关性筛选 → 点评 → 更新 `summary.md` 候选列表。
+
+**本 skill 是轻量调研入口：不调用 paper-reader，不精读论文，不生成中英双语深度笔记。**
+
+**不要写临时全量抓取脚本直接刷新 summary。** 必须走 `multi_source_fetch.py` 生成候选和诊断文件，再由 Claude 做相关性筛选后只把前 50 篇 `core/adjacent` 候选写入 `_meta/topic_papers.json` 和 `summary.md`。
 
 ## Step 0: 读取共享配置
 
@@ -79,6 +83,8 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
 
 读取 `$META_DIR/candidates.json`，获取规范化、去重、排序后的候选论文。检查 `$META_DIR/source_diagnostics.json` 和 `$META_DIR/dedup_stats.json`，把来源失败和去重情况写入调研记录。
 
+禁止用 ad hoc `for 365 days`、单独 arXiv/HF 循环脚本直接生成 `summary.md`。这些脚本会绕过 ScholarFlow 的去重、筛选、summary 增量更新和候选上限，容易产生几百行噪声候选。
+
 ## Step 5: Claude 筛选与点评（风格：毒舌但精准）
 
 读取所有候选论文后，Claude 逐一判断相关性并生成锐评。
@@ -98,23 +104,56 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
 把完整筛选记录保存到 `$META_DIR/screening.json`，每篇包含：
 `title`、`label`、`score`、`reason`、`matched_terms`、`negative_hits`。
 
+筛选后只允许把最多 50 篇 `core/adjacent` 论文进入 Research_Fields summary；完整候选和排除记录保留在 `_meta` 诊断文件里，不把原始候选全量塞进 summary。
+
 **锐评要求**：
 1. 核心方法：2-3 句话讲清楚方法怎么工作
 2. 关键贡献：相比前人有什么新意
 3. 锐评：方法有没有硬伤？claim 和 evidence 匹配吗？
 4. emoji 判决：🔥=强推，👀=值得关注，⚠️=有硬伤但方向对，💀=灌水，🤡=标题党，💤=无聊
 
-## Step 6: 保存论文文件到 Research_Fields
+## Step 6: 保存候选索引并更新 Research_Fields
 
 ### 6a. 创建目录结构
 
 ```bash
 FIELD_DIR="{VAULT_PATH}/Research_Fields/{主题}"
 PAPERS_DIR="{FIELD_DIR}/papers"
-mkdir -p "{PAPERS_DIR}"
+mkdir -p "{PAPERS_DIR}" "{FIELD_DIR}/_meta"
 ```
 
-### 6b. 更新研究方向 summary
+调研阶段只创建目录和候选索引，不在 `papers/` 下创建论文笔记目录。
+
+### 6b. 保存候选索引
+
+把筛选后排名最高的最多 50 篇 `core` 和 `adjacent` 相关论文写入：
+
+`{FIELD_DIR}/_meta/topic_papers.json`
+
+每条记录包含：
+```json
+{
+  "title": "论文标题",
+  "method_name": "方法名或短标题",
+  "date": "YYYY-MM-DD",
+  "year": 2026,
+  "url": "https://arxiv.org/abs/xxxx",
+  "pdf_url": "https://arxiv.org/pdf/xxxx",
+  "code_url": "https://github.com/...",
+  "label": "core",
+  "reason": "一句话相关性理由",
+  "source": "arxiv",
+  "note_status": "pending"
+}
+```
+
+如果同一论文已经有笔记，`note_status` 可保持 `pending`；`summary.md` 生成器会根据本地笔记目录自动显示为已精读。
+
+`code_url` 只做快速抽取：优先使用候选源已有的 `github/code_url/repository/project_url/homepage` 字段；如果为空，再从标题、摘要、comment 等元数据中抽取 GitHub 或项目页链接。不要为了补代码链接逐篇联网深搜。
+
+标准候选索引路径是 `{FIELD_DIR}/_meta/topic_papers.json`。不要把新的候选索引写到 `{FIELD_DIR}/topic_papers.json`；根目录旧文件只作为兼容输入。
+
+### 6c. 更新研究方向 summary
 
 路径：`{FIELD_DIR}/summary.md`（增量更新，禁止整文件覆写）
 
@@ -149,9 +188,16 @@ generated_by: dailypaper-skills
 
 | 发布时间 | 论文 | 笔记 | 代码 | 来源 | 备注 |
 |----------|------|------|------|------|------|
-| ... |
+| 2026.05.02 | [MethodName](arXiv链接) | 待精读 | [GitHub](代码链接) | [arXiv](来源链接) |  |
 <!-- scholarflow:paper-list:end -->
 ```
+
+表格规则：
+- 所有 `core/adjacent` 相关论文进入同一张表
+- summary 最多显示 50 篇论文，作为人工阅读入口，不做全量候选仓库
+- 未精读论文：论文名链接到 arXiv/来源，笔记列显示 `待精读`
+- 已精读论文：论文名优先链接本地 PDF，笔记列显示 EN/ZH Obsidian 链接
+- 备注列永远留空，由用户人工填写；`label`、`reason`、`hf_upvotes` 等机器字段只保存在 JSON/诊断文件，不写入 summary 表格
 
 同时保留 `_meta/` 中间产物：
 ```
@@ -172,7 +218,7 @@ papers/ 目录下每篇论文的结构：
 └── {论文名}.pdf
 ```
 
-### 6c. 保存快速导航推荐文件
+### 6d. 保存快速导航推荐文件
 
 同时在 Dailypaper 目录下生成一个快速导航文件：
 
@@ -195,7 +241,7 @@ tags: [topic-research, auto-generated]
 
 | 等级 | 论文 | 笔记 |
 |------|------|------|
-| 🔥 必读 | [[论文名]] | [笔记](./papers/{论文名}/{论文名}_zh.md) |
+| 🔥 必读 | [[论文名]] | 待精读 |
 ...
 
 ## 论文点评
@@ -204,32 +250,26 @@ tags: [topic-research, auto-generated]
 - **链接**: [arXiv](url) | [PDF](pdf_url)
 - **核心方法**: ...
 - **锐评**: ...
-- 💡 运行：`读一下 {论文标题}`
+- 💡 **想精读？** 运行：`读一下 {论文标题}` 或 `精读 {论文标题}`
 ...
 ```
 
-## Step 7: 生成笔记（🔥 必读论文）
-
-对所有 `core` 且在分流表中标记为 🔥 必读的论文，逐篇调用 paper-reader skill 生成中英双语笔记：
-
-每篇笔记的结构（由 paper-reader skill 生成）：
-- `{论文名}_en.md`：英文深度笔记
-- `{论文名}_zh.md`：中文深度笔记
-- `pngs/`：从 PDF 提取的图片
-
-笔记生成完成后，更新 `summary.md` 中的链接。
-
-## Step 8: 完成后告知用户
+## Step 7: 完成后告知用户
 
 告知用户：
-- 抓取到多少篇论文，其中 🔥🔥👀 各多少
+- 抓取到多少篇候选，筛选出多少篇 `core/adjacent`
 - 推荐文件保存在：`Dailypaper/{月份}/{DD}/research-{主题}.md`
-- 笔记保存在：`Research_Fields/{主题}/papers/{论文名}/`
-- 运行下一步：`读一下 {论文标题}` 可以精读某篇
+- 候选索引保存在：`Research_Fields/{主题}/_meta/topic_papers.json`
+- summary 已更新，未精读论文显示为 `待精读`
+- summary 备注列已留空，供用户人工填写
+- 运行下一步：`读一下 {论文标题}` 或 `精读 {论文标题}` 可以精读指定论文
 
 ## 重要约束
 
 - **不要先要求用户确认关键词**，LLM 生成的就是要用的
-- **不要只生成关键词就停下**，继续跑完整流水线
+- **不要只生成关键词就停下**，继续跑到候选索引和 summary 更新完成
+- **调研阶段不调用 paper-reader，不精读论文，不下载 PDF，不抽图**
+- **不要把临时脚本结果直接写入 summary.md；必须走 `_meta/topic_papers.json` + summary 生成器**
+- **不要自动写 summary 备注列；备注由用户人工维护**
 - 主题模糊时，关键词应偏宽泛而非狭窄
-- PDF 必须下载（因为 paper-reader 需要）
+- 只有用户明确说 `读一下 {论文标题}`、`精读 {论文标题}` 或 `生成笔记 {论文标题}` 时，才进入 paper-reader 深读流程

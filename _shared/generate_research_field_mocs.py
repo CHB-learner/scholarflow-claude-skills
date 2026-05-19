@@ -20,6 +20,7 @@ Usage:
 """
 
 import re
+import json
 import sys
 from pathlib import Path
 
@@ -34,6 +35,13 @@ from user_config import paths_config, load_user_config
 
 PAPER_LIST_START = "<!-- scholarflow:paper-list:start -->"
 PAPER_LIST_END = "<!-- scholarflow:paper-list:end -->"
+MAX_SUMMARY_PAPERS = 50
+
+GITHUB_URL_RE = re.compile(r"https?://github\.com/[^\s\]\)>,;\"']+", re.IGNORECASE)
+PROJECT_URL_RE = re.compile(
+    r"https?://[^\s\]\)>,;\"']*(?:github\.io|pages\.dev|huggingface\.co/spaces)[^\s\]\)>,;\"']*",
+    re.IGNORECASE,
+)
 
 
 def extract_arxiv_source(content: str) -> str:
@@ -103,61 +111,7 @@ def build_research_field_mocs(vault_path: Path) -> dict:
         result["research_fields"] += 1
         field_name = field_dir.name
 
-        # papers are under {field_dir}/papers/{paper_name}/
-        papers_dir = field_dir / "papers"
-        if not papers_dir.exists():
-            papers_dir = field_dir  # fallback to old structure
-
-        papers = []
-        for paper_dir in sorted(papers_dir.iterdir()) if papers_dir.exists() else []:
-            if not paper_dir.is_dir() or paper_dir.name.startswith("."):
-                continue
-
-            method_name = paper_dir.name
-            has_en = (paper_dir / f"{method_name}_en.md").exists()
-            has_zh = (paper_dir / f"{method_name}_zh.md").exists()
-            has_pdf = (paper_dir / f"{method_name}.pdf").exists()
-
-            # Extract info from en.md (or zh.md as fallback)
-            paper_date = ""
-            paper_github = ""
-            paper_source = ""
-            note_file = paper_dir / f"{method_name}_en.md" if has_en else (paper_dir / f"{method_name}_zh.md" if has_zh else None)
-            if note_file and note_file.exists():
-                content = note_file.read_text(encoding="utf-8")
-
-                # Date: try frontmatter date first, then Published table, then arXiv ID
-                date_match = re.search(r'^date:\s*(\d{4}-\d{2}-\d{2})', content, re.MULTILINE)
-                if not date_match:
-                    date_match = re.search(r'\|\s*\*\*?Published\*\*?\s*\|\s*(\d{4}-\d{2}-\d{2})', content, re.IGNORECASE)
-                if not date_match:
-                    paper_date = extract_date_from_arxiv(content)
-                else:
-                    paper_date = date_match.group(1)
-
-                # Source (arXiv URL) - extract regardless of date
-                paper_source = extract_arxiv_source(content)
-
-                # GitHub extraction
-                github_match = re.search(r'(?:github|code):\s*(https://github\.com/[^\s]+)', content, re.IGNORECASE)
-                if not github_match:
-                    github_match = re.search(r'\[(?:GitHub|Code|github)\]\((https://github\.com/[^\)]+)\)', content, re.IGNORECASE)
-                if github_match:
-                    paper_github = github_match.group(1)
-
-            if has_en or has_zh:
-                papers.append({
-                    "name": method_name,
-                    "path": paper_dir,
-                    "has_en": has_en,
-                    "has_zh": has_zh,
-                    "has_pdf": has_pdf,
-                    "date": paper_date,
-                    "github": paper_github,
-                    "source": paper_source,
-                })
-
-        result["papers_found"] += len(papers)
+        papers = _collect_field_papers(field_dir)
 
         # Sort papers by date descending
         def sort_key(p):
@@ -170,6 +124,9 @@ def build_research_field_mocs(vault_path: Path) -> dict:
             except:
                 return (1, "")
         papers.sort(key=sort_key)
+        papers = papers[:MAX_SUMMARY_PAPERS]
+
+        result["papers_found"] += len(papers)
 
         # Generate summary.md
         summary_path = field_dir / "summary.md"
@@ -232,27 +189,35 @@ def _build_managed_paper_list_block(papers: list, vault_root: Path) -> str:
 
             # Paper name with optional link
             if paper.get("has_pdf"):
-                pdf_path = f"papers/{method_name}/{method_name}.pdf"
+                pdf_path = f"{paper.get('rel_dir', f'papers/{method_name}')}/{method_name}.pdf"
                 paper_link = f"[{method_name}](obsidian://open?vault={vault_name}&file={pdf_path})"
             elif paper.get("source"):
                 paper_link = f"[{method_name}]({paper.get('source')})"
+            elif paper.get("pdf_url"):
+                paper_link = f"[{method_name}]({paper.get('pdf_url')})"
             else:
                 paper_link = method_name
 
             # Notes: EN and ZH links
-            en_link = f"[EN](obsidian://open?vault={vault_name}&file=papers/{method_name}/{method_name}_en)" if paper.get("has_en") else ""
-            zh_link = f"[ZH](obsidian://open?vault={vault_name}&file=papers/{method_name}/{method_name}_zh)" if paper.get("has_zh") else ""
-            notes_link = " ".join(filter(None, [en_link, zh_link]))
+            rel_dir = paper.get("rel_dir", f"papers/{method_name}")
+            en_link = f"[EN](obsidian://open?vault={vault_name}&file={rel_dir}/{method_name}_en)" if paper.get("has_en") else ""
+            zh_link = f"[ZH](obsidian://open?vault={vault_name}&file={rel_dir}/{method_name}_zh)" if paper.get("has_zh") else ""
+            notes_link = " ".join(filter(None, [en_link, zh_link])) or "待精读"
 
-            # GitHub link
-            github = paper.get("github", "")
-            github_link = f"[GitHub]({github})" if github else ""
+            # Code/project link
+            code_url = paper.get("github", "") or paper.get("code_url", "")
+            if code_url:
+                code_label = "GitHub" if "github.com" in code_url.lower() else "Project"
+                github_link = f"[{code_label}]({code_url})"
+            else:
+                github_link = ""
 
             # Source
             source = paper.get("source", "")
-            source_link = f"[arXiv]({source})" if source else ""
+            source_label = "arXiv" if "arxiv.org" in source.lower() else "Source"
+            source_link = f"[{source_label}]({source})" if source else ""
 
-            lines.append(f"| {date_str} | {paper_link} | {notes_link} | {github_link} | {source_link} | |")
+            lines.append(f"| {date_str} | {paper_link} | {notes_link} | {github_link} | {source_link} |  |")
 
     lines.append(PAPER_LIST_END)
     return "\n".join(lines)
@@ -295,6 +260,281 @@ def _strip_legacy_count(prefix: str) -> str:
     if lines and re.fullmatch(r"该研究方向下共有 \*\*\d+\*\* 篇论文。", lines[-1].strip()):
         lines.pop()
     return "\n".join(lines)
+
+
+def _collect_field_papers(field_dir: Path) -> list[dict]:
+    entries = _load_topic_paper_candidates(field_dir) + _scan_note_papers(field_dir)
+    merged: dict[str, dict] = {}
+    key_index: dict[str, str] = {}
+    for entry in entries:
+        keys = _entry_keys(entry)
+        primary_key = next((key_index[key] for key in keys if key in key_index), keys[0])
+        if primary_key in merged:
+            merged[primary_key] = _merge_paper_entry(merged[primary_key], entry)
+        else:
+            merged[primary_key] = entry
+        for key in keys:
+            key_index[key] = primary_key
+    return list(merged.values())
+
+
+def _load_topic_paper_candidates(field_dir: Path) -> list[dict]:
+    topic_papers_path = _topic_papers_path(field_dir)
+    if topic_papers_path is None:
+        return []
+    try:
+        payload = json.loads(topic_papers_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    if isinstance(payload, dict):
+        raw_papers = payload.get("papers", [])
+    else:
+        raw_papers = payload
+    if not isinstance(raw_papers, list):
+        return []
+
+    papers = []
+    for item in raw_papers:
+        if not isinstance(item, dict):
+            continue
+        if _metadata_text(item.get("label")).lower() == "exclude":
+            continue
+        title = _metadata_text(item.get("title"))
+        method_name = _metadata_text(item.get("method_name") or item.get("name")) or _method_name_from_title(title)
+        if not method_name:
+            continue
+        source = _source_url(item)
+        code_url = _extract_code_url(item)
+        papers.append({
+            "name": method_name,
+            "title": title,
+            "has_en": False,
+            "has_zh": False,
+            "has_pdf": False,
+            "date": _coerce_candidate_date(item),
+            "github": code_url if "github.com" in code_url.lower() else "",
+            "code_url": code_url,
+            "source": source,
+            "pdf_url": _metadata_text(item.get("pdf_url")),
+            "label": _metadata_text(item.get("label")),
+            "reason": _metadata_text(item.get("reason")),
+            "note_status": _metadata_text(item.get("note_status")) or "pending",
+        })
+    return papers
+
+
+def _topic_papers_path(field_dir: Path) -> Path | None:
+    meta_path = field_dir / "_meta" / "topic_papers.json"
+    if meta_path.exists():
+        return meta_path
+    legacy_path = field_dir / "topic_papers.json"
+    if legacy_path.exists():
+        return legacy_path
+    return None
+
+
+def _scan_note_papers(field_dir: Path) -> list[dict]:
+    paper_dirs: list[Path] = []
+    papers_dir = field_dir / "papers"
+    if papers_dir.exists():
+        paper_dirs.extend(_paper_note_dirs(papers_dir))
+    paper_dirs.extend(_paper_note_dirs(field_dir, exclude_names={"papers", "_meta"}))
+
+    papers = []
+    seen_dirs = set()
+    for paper_dir in paper_dirs:
+        if paper_dir in seen_dirs:
+            continue
+        seen_dirs.add(paper_dir)
+        method_name = paper_dir.name
+        has_en = (paper_dir / f"{method_name}_en.md").exists()
+        has_zh = (paper_dir / f"{method_name}_zh.md").exists()
+        has_pdf = (paper_dir / f"{method_name}.pdf").exists()
+        if not has_en and not has_zh:
+            continue
+
+        paper_date = ""
+        paper_github = ""
+        paper_source = ""
+        note_file = paper_dir / f"{method_name}_en.md" if has_en else paper_dir / f"{method_name}_zh.md"
+        content = note_file.read_text(encoding="utf-8")
+
+        date_match = re.search(r'^date:\s*(\d{4}-\d{2}-\d{2})', content, re.MULTILINE)
+        if not date_match:
+            date_match = re.search(r'\|\s*\*\*?Published\*\*?\s*\|\s*(\d{4}-\d{2}-\d{2})', content, re.IGNORECASE)
+        paper_date = date_match.group(1) if date_match else extract_date_from_arxiv(content)
+
+        paper_source = extract_arxiv_source(content)
+
+        github_match = re.search(r'(?:github|code):\s*(https://github\.com/[^\s]+)', content, re.IGNORECASE)
+        if not github_match:
+            github_match = re.search(r'\[(?:GitHub|Code|github)\]\((https://github\.com/[^\)]+)\)', content, re.IGNORECASE)
+        if github_match:
+            paper_github = github_match.group(1)
+
+        papers.append({
+            "name": method_name,
+            "path": paper_dir,
+            "rel_dir": paper_dir.relative_to(field_dir).as_posix(),
+            "has_en": has_en,
+            "has_zh": has_zh,
+            "has_pdf": has_pdf,
+            "date": paper_date,
+            "github": paper_github,
+            "source": paper_source,
+            "note_status": "done",
+        })
+    return papers
+
+
+def _paper_note_dirs(root: Path, exclude_names: set[str] | None = None) -> list[Path]:
+    exclude_names = exclude_names or set()
+    dirs = []
+    for child in sorted(root.iterdir()) if root.exists() else []:
+        if not child.is_dir() or child.name.startswith(".") or child.name in exclude_names:
+            continue
+        if (child / f"{child.name}_en.md").exists() or (child / f"{child.name}_zh.md").exists():
+            dirs.append(child)
+    return dirs
+
+
+def _merge_paper_entry(existing: dict, incoming: dict) -> dict:
+    merged = dict(existing)
+    incoming_done = incoming.get("note_status") == "done" or incoming.get("has_en") or incoming.get("has_zh")
+    for key, value in incoming.items():
+        if value in ("", None, [], {}):
+            continue
+        if key in {"label", "reason"} and merged.get(key):
+            continue
+        if incoming_done or not merged.get(key):
+            merged[key] = value
+    if incoming_done:
+        merged["note_status"] = "done"
+    return merged
+
+
+def _entry_keys(entry: dict) -> list[str]:
+    keys = []
+    if entry.get("name"):
+        keys.append("name:" + entry.get("name", "").lower())
+    for url_key in ("source", "pdf_url"):
+        source = entry.get(url_key, "")
+        arxiv_id = _extract_arxiv_id(source)
+        if arxiv_id:
+            keys.append("arxiv:" + arxiv_id)
+    title = _metadata_text(entry.get("title"))
+    if title:
+        keys.append("title:" + re.sub(r"[^a-z0-9\u4e00-\u9fff]+", " ", title.lower()).strip())
+    return keys or ["object:" + str(id(entry))]
+
+
+def _source_url(item: dict) -> str:
+    for key in ("url", "source_url", "source"):
+        value = _metadata_text(item.get(key))
+        if value.startswith("http://") or value.startswith("https://"):
+            return _normalize_source_url(value)
+    arxiv_id = _metadata_text(item.get("arxiv_id"))
+    if arxiv_id:
+        return f"https://arxiv.org/abs/{_normalize_arxiv_id(arxiv_id)}"
+    return ""
+
+
+def _normalize_source_url(value: str) -> str:
+    value = _clean_url(value)
+    arxiv_id = _extract_arxiv_id(value)
+    if arxiv_id:
+        return f"https://arxiv.org/abs/{arxiv_id}"
+    return value
+
+
+def _extract_arxiv_id(value: str) -> str:
+    match = re.search(r"arxiv\.org/(?:abs|pdf)/([^?#\s)]+)", _metadata_text(value), re.IGNORECASE)
+    if match:
+        return _normalize_arxiv_id(match.group(1))
+    match = re.search(r"\b(\d{4}\.\d{4,5})(?:v\d+)?\b", _metadata_text(value))
+    if match:
+        return _normalize_arxiv_id(match.group(0))
+    return ""
+
+
+def _normalize_arxiv_id(value: str) -> str:
+    return re.sub(r"v\d+$", "", value.strip(), flags=re.IGNORECASE).lower()
+
+
+def _extract_code_url(item: dict) -> str:
+    direct_fields = (
+        "github",
+        "code_url",
+        "code",
+        "repository",
+        "repo_url",
+        "project_url",
+        "homepage",
+        "demo_url",
+    )
+    for key in direct_fields:
+        url = _first_code_url(_metadata_text(item.get(key)))
+        if url:
+            return url
+
+    text_fields = (
+        "title",
+        "abstract",
+        "summary",
+        "comment",
+        "comments",
+        "notes",
+        "raw",
+    )
+    text = "\n".join(_metadata_text(item.get(key)) for key in text_fields if item.get(key))
+    return _first_code_url(text)
+
+
+def _first_code_url(text: str) -> str:
+    if not text:
+        return ""
+    match = GITHUB_URL_RE.search(text)
+    if match:
+        return _clean_url(match.group(0))
+    match = PROJECT_URL_RE.search(text)
+    if match:
+        return _clean_url(match.group(0))
+    return ""
+
+
+def _clean_url(value: str) -> str:
+    value = re.sub(r"\{[^}]*\}", "", _metadata_text(value))
+    return value.rstrip(".,;:)]}\"'")
+
+
+def _coerce_candidate_date(item: dict) -> str:
+    for key in ("date", "published", "published_date"):
+        value = _metadata_text(item.get(key))
+        match = re.search(r"(19|20)\d{2}-\d{2}-\d{2}", value)
+        if match:
+            return match.group(0)
+    year = _metadata_text(item.get("year"))
+    if re.fullmatch(r"(19|20)\d{2}", year):
+        return f"{year}-01-01"
+    return ""
+
+
+def _method_name_from_title(title: str) -> str:
+    if not title:
+        return ""
+    if ":" in title:
+        return title.split(":", 1)[0].strip()
+    return title.strip()
+
+
+def _metadata_text(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return " ".join(value.split())
+    if isinstance(value, (int, float)):
+        return str(value)
+    return str(value).strip()
 
 
 def main():
