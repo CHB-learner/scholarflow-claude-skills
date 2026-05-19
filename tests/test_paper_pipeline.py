@@ -686,7 +686,7 @@ class ResearchFieldMocTests(unittest.TestCase):
         self.assertIn("不启动深读", paper_reader_skill)
         self.assertIn("未分类", paper_reader_skill)
         self.assertIn("{VAULT_PATH}/未分类/papers/{MethodName}/", paper_reader_skill)
-        self.assertIn("不要创建 `Dailypaper/{月份}`", topic_skill)
+        self.assertIn("不要创建 `Dailypaper/{YYYY-MM-DD}`", topic_skill)
         self.assertNotIn("research-{主题}.md", topic_skill)
 
     def _make_vault(self, tmp: str) -> tuple[Path, Path]:

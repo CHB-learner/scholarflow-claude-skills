@@ -86,7 +86,7 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
 
 禁止用 ad hoc `for 365 days`、单独 arXiv/HF 循环脚本直接生成 `summary.md`。这些脚本会绕过 ScholarFlow 的去重、筛选、summary 增量更新和候选上限，容易产生几百行噪声候选。
 
-调研方向时不要创建 `Dailypaper/{月份}`、`Dailypaper/{月份}/{DD}` 或其 `_meta` 目录；调研相关中间产物只放在 `{FIELD_DIR}/_meta/`。
+调研方向时不要创建 `Dailypaper/{YYYY-MM-DD}` 或其 `_meta` 目录；调研相关中间产物只放在 `{FIELD_DIR}/_meta/`。
 
 ## Step 5: Claude 筛选与点评（风格：毒舌但精准）
 
@@ -228,7 +228,7 @@ papers/ 目录下每篇论文的结构：
 - **不要先要求用户确认关键词**，LLM 生成的就是要用的
 - **不要只生成关键词就停下**，继续跑到候选索引和 summary 更新完成
 - **调研阶段不调用 paper-reader，不精读论文，不下载 PDF，不抽图**
-- **调研阶段不要创建 `Dailypaper/{月份}` 文件夹；中间产物统一放到研究方向 `_meta/` 下**
+- **调研阶段不要创建 `Dailypaper/{YYYY-MM-DD}` 文件夹；中间产物统一放到研究方向 `_meta/` 下**
 - **不要把临时脚本结果直接写入 summary.md；必须走 `_meta/topic_papers.json` + summary 生成器**
 - **不要自动写 summary 备注列；备注由用户人工维护**
 - 主题模糊时，关键词应偏宽泛而非狭窄

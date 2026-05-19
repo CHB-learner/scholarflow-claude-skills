@@ -25,7 +25,7 @@ description: |
 - `GIT_COMMIT_ENABLED`
 - `GIT_PUSH_ENABLED`
 
-优先读取输入文件：`{DAILY_PAPERS_PATH}/{月份}/{DD}/_meta/enriched.json`；如果不存在，读取 `_meta/candidates.json`。
+优先读取输入文件：`{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/_meta/enriched.json`；如果不存在，读取 `_meta/candidates.json`。
 
 ## 前置检查
 
@@ -36,25 +36,25 @@ description: |
 
 ### Phase 1: 确定日期和文件夹路径
 
-从当天日期计算：
-- 月份文件夹：`{month}月`（如"5月"、"6月"）
-- 日文件夹：`{MMDD}`（如"519"、"620"）
+从当天日期计算日期文件夹：
 
-完整路径：`{DAILY_PAPERS_PATH}/{月份}/{DD}/`
+完整路径：`{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/`
 
-例如：今天是 2026-05-19 → `/Users/at/Desktop/研究生icloud/笔记/dailypaper2026/papers/Dailypaper/5月/519/`
+例如：今天是 2026-05-20 → `/Users/at/Desktop/研究生icloud/笔记/dailypaper2026/papers/Dailypaper/2026-05-20/`
 
 **创建目录**（如果不存在）：
 ```bash
-mkdir -p "{DAILY_PAPERS_PATH}/{月份}/{DD}/pngs"
+mkdir -p "{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/pngs"
 ```
 
 ### Phase 2: 读取关键词配置
 
-从 `user-config.json` 的 `daily_paper_keywords` 字段读取当日检索关键词：
+从共享配置的 `daily.keywords` 字段读取当日检索关键词；旧配置 `daily_paper_keywords` 仍兼容：
 ```json
 {
-  "daily_paper_keywords": ["大模型评测", "扩散模型"]
+  "daily": {
+    "keywords": ["RNA", "Agent", "LLM"]
+  }
 }
 ```
 
@@ -149,7 +149,7 @@ LLM 根据关键词列表，理解当日检索的主题和边界。
 
 ### Phase 5: 保存到 Obsidian
 
-用 Write 工具保存到 `{DAILY_PAPERS_PATH}/{月份}/{DD}/YYYY-MM-DD-论文推荐.md`。
+用 Write 工具保存到 `{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/YYYY-MM-DD-论文推荐.md`。
 
 文件开头加 YAML frontmatter：
 
@@ -166,7 +166,7 @@ tags: [daily-papers, auto-generated]
 仅当 `GIT_COMMIT_ENABLED=true` 时执行：
 
 ```bash
-cd {VAULT_PATH} && git add "Dailypaper/{月份}/{DD}/YYYY-MM-DD-论文推荐.md" && git commit -m "daily papers: YYYY-MM-DD"
+cd {VAULT_PATH} && git add "Dailypaper/{YYYY-MM-DD}/YYYY-MM-DD-论文推荐.md" && git commit -m "daily papers: YYYY-MM-DD"
 ```
 
 只有 `GIT_PUSH_ENABLED=true` 且仓库已配置远端时才 push。

@@ -101,9 +101,13 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 ```text
 {vault}/
 ├── Dailypaper/
-│   └── 5月/
-│       └── 0520/
-│           └── 2026-05-20-论文推荐.md
+│   ├── .history.json
+│   └── 2026-05-20/
+│       ├── 2026-05-20-论文推荐.md
+│       └── _meta/
+│           ├── candidates.json
+│           ├── screening.json
+│           └── source_diagnostics.json
 │
 ├── Research_Fields/
 │   └── AgenticRL/
@@ -146,11 +150,9 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 
 `summary.md` 的自动表格类似：
 
-```markdown
 | 发布时间 | 论文 | 笔记 | 代码 | 来源 | 备注 |
 |----------|------|------|------|------|------|
 | 2026.05.18 | [Code as Agent Harness](https://arxiv.org/abs/2605.18747) | 待精读 |  | [arXiv](https://arxiv.org/abs/2605.18747) |  |
-```
 
 说明：
 
@@ -182,7 +184,7 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 📍 输出到：
 
 ```text
-{vault}/Dailypaper/{月份}/{日期}/
+{vault}/Dailypaper/{YYYY-MM-DD}/
 ```
 
 ### 2. 📖 读某篇论文
@@ -220,7 +222,7 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 {vault}/Research_Fields/{方向}/_meta/topic_papers.json
 ```
 
-🚫 不会自动精读，也不会写入 `Dailypaper/{月份}`。
+🚫 不会自动精读，也不会写入 `Dailypaper/{YYYY-MM-DD}`。
 
 ## 🌟 一句话记住
 

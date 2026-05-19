@@ -25,30 +25,28 @@ description: |
 - `GIT_COMMIT_ENABLED`
 - `GIT_PUSH_ENABLED`
 
-优先读取输入文件：`{DAILY_PAPERS_PATH}/{月份}/{DD}/_meta/enriched.json`；如果不存在，读取 `_meta/candidates.json`。
+优先读取输入文件：`{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/_meta/enriched.json`；如果不存在，读取 `_meta/candidates.json`。
 
 ## 前置检查
 
 1. 检查当天 `_meta/enriched.json` 或 `_meta/candidates.json` 是否存在
-2. 根据当天日期计算文件夹路径：`{DAILY_PAPERS_PATH}/{月份}/{DD}/`
-3. 检查当天的推荐文件 `{DAILY_PAPERS_PATH}/{月份}/{DD}/YYYY-MM-DD-论文推荐.md` 是否存在
+2. 根据当天日期计算文件夹路径：`{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/`
+3. 检查当天的推荐文件 `{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/YYYY-MM-DD-论文推荐.md` 是否存在
 4. 如果任一不存在，告知用户需要先运行前置步骤，然后停止
 
 ## 工作流程
 
 ### Step 1: 确定保存路径
 
-从当天日期计算：
-- 月份文件夹：`{month}月`（如"5月"、"6月"）
-- 日文件夹：`{MMDD}`（如"519"、"620"）
+从当天日期计算日期文件夹：
 
-完整路径：`{DAILY_PAPERS_PATH}/{月份}/{DD}/`
+完整路径：`{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/`
 
-例如：今天是 2026-05-19 → `/Users/at/Desktop/研究生icloud/笔记/dailypaper2026/papers/Dailypaper/5月/519/`
+例如：今天是 2026-05-20 → `/Users/at/Desktop/研究生icloud/笔记/dailypaper2026/papers/Dailypaper/2026-05-20/`
 
 **创建目录**（如果不存在）：
 ```bash
-mkdir -p "{DAILY_PAPERS_PATH}/{月份}/{DD}/pngs"
+mkdir -p "{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/pngs"
 ```
 
 ### Step 2: 论文笔记生成
@@ -58,7 +56,7 @@ mkdir -p "{DAILY_PAPERS_PATH}/{月份}/{DD}/pngs"
 1. 从当天的推荐文件中，读取分流表，筛选出标记为"🔥 必读"的论文（"值得看"和"可跳过"的不生成笔记）
 2. 对每篇"必读"论文，使用 paper-reader skill 生成笔记：
    - 调用 Task agent，传入 arXiv 链接
-   - **输出路径固定为** `{DAILY_PAPERS_PATH}/{月份}/{DD}/`
+   - **输出路径固定为** `{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/`
    - 笔记文件名：`{MethodName}_en.md` 和 `{MethodName}_zh.md`
    - 图片保存到 `pngs/` 子目录
    - **不下载 PDF**
@@ -87,7 +85,7 @@ paper-reader 在独立的 Task agent 中运行，不会占用主 agent 的 conte
 
 **3a: 收集已有笔记**
 
-用 Glob 扫描 `{DAILY_PAPERS_PATH}/{月份}/{DD}/` 下的所有 `*_en.md` 和 `*_zh.md` 文件，建立 `{文件名(不含.md): 相对路径}` 的索引。
+用 Glob 扫描 `{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/` 下的所有 `*_en.md` 和 `*_zh.md` 文件，建立 `{文件名(不含.md): 相对路径}` 的索引。
 
 **3b: 匹配论文与笔记**
 

@@ -32,6 +32,7 @@ description: |
 其中：
 
 - `DAILY_PAPERS_PATH = {VAULT_PATH}/{daily_papers_folder}`
+- `DAILY_RUN_DIR = {DAILY_PAPERS_PATH}/{YYYY-MM-DD}`，例如 `Dailypaper/2026-05-20`
 - 所有关键词、分类、阈值都以共享配置为准
 
 后续统一以共享配置和上面的变量为准。
@@ -59,7 +60,8 @@ description: |
 用 `multi_source_fetch.py` 一步完成免费核心源抓取、统一 Paper schema、强 ID 去重、标题相似度去重、排序和诊断。**零 token 消耗。**
 
 ```bash
-META_DIR="{DAILY_PAPERS_PATH}/{月份}/{DD}/_meta"
+DAILY_RUN_DIR="{DAILY_PAPERS_PATH}/{YYYY-MM-DD}"
+META_DIR="$DAILY_RUN_DIR/_meta"
 mkdir -p "$META_DIR"
 python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
   --topic "每日论文" \

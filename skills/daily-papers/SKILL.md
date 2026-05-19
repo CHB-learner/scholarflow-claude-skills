@@ -6,7 +6,7 @@ description: |
 
   内部会自动：关键词丰富化 → 多源检索 → 规范化去重 → Claude判断相关性 → 生成推荐 → 生成笔记。
 
-  如果用户没有指定关键词，使用 user-config.json 中的 `daily_paper_keywords` 配置。
+  如果用户没有指定关键词，使用共享配置中的 `daily.keywords`；旧配置 `daily_paper_keywords` 仍兼容。
 ---
 
 # 每日论文推荐
@@ -24,7 +24,7 @@ description: |
 
 2. **识别关键词**：
    - 如果用户指定了关键词（如"大模型评测"、"扩散模型"），使用用户提供的
-   - 如果用户没有指定，从 `daily_paper_keywords` 配置获取默认关键词
+   - 如果用户没有指定，从 `daily.keywords` 配置获取默认关键词；旧配置 `daily_paper_keywords` 仍兼容
 
 ## 执行流程
 
@@ -43,7 +43,7 @@ description: |
 
 ### Step 2: 多源检索（multi_source_fetch.py）
 
-调用 `multi_source_fetch.py`，传入丰富化后的关键词。输出保存在当天目录的 `_meta/` 下，便于复盘：
+调用 `multi_source_fetch.py`，传入丰富化后的关键词。输出保存在当天日期目录的 `_meta/` 下，便于复盘：
 
 ```bash
 python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
@@ -52,7 +52,7 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
   --since-year {年份下限} \
   --max-results 100 \
   --sources auto \
-  --output "{DAILY_PAPERS_PATH}/{月份}/{DD}/_meta/candidates.json"
+  --output "{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/_meta/candidates.json"
 ```
 
 输出：
