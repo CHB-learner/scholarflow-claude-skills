@@ -536,6 +536,26 @@ class ResearchFieldMocTests(unittest.TestCase):
             self.assertIn("file=RiboSphere/RiboSphere.pdf", content)
             self.assertIn("file=RiboSphere/RiboSphere_en", content)
 
+    def test_uncategorized_field_notes_are_indexed_like_other_fields(self):
+        import generate_research_field_mocs
+        import user_config
+
+        with TemporaryDirectory() as tmp:
+            vault, config_dir = self._make_vault(tmp)
+            self._write_note(vault, "未分类", "ColdStartPaper")
+
+            with patch.object(user_config, "_config_dir", return_value=config_dir):
+                user_config.load_user_config.cache_clear()
+                result = generate_research_field_mocs.build_research_field_mocs(vault)
+
+            summary_path = vault / "Research_Fields" / "未分类" / "summary.md"
+            content = summary_path.read_text(encoding="utf-8")
+            self.assertEqual(result["created_files"], 2)
+            self.assertIn("# 未分类", content)
+            self.assertIn("| 2026.05.01 | [ColdStartPaper]", content)
+            self.assertIn("file=papers/ColdStartPaper/ColdStartPaper.pdf", content)
+            self.assertIn("file=papers/ColdStartPaper/ColdStartPaper_en", content)
+
     def test_skill_docs_make_topic_research_lightweight_and_require_named_read(self):
         topic_skill = (SKILLS_ROOT / "topic-research" / "SKILL.md").read_text(encoding="utf-8")
         paper_reader_skill = (SKILLS_ROOT / "paper-reader" / "SKILL.md").read_text(encoding="utf-8")
@@ -548,6 +568,8 @@ class ResearchFieldMocTests(unittest.TestCase):
         self.assertNotIn("## Step 7: 生成笔记", topic_skill)
         self.assertIn("`读一下` 不带论文名", paper_reader_skill)
         self.assertIn("不启动深读", paper_reader_skill)
+        self.assertIn("未分类", paper_reader_skill)
+        self.assertIn("Research_Fields/未分类/papers/{MethodName}/", paper_reader_skill)
 
     def _make_vault(self, tmp: str) -> tuple[Path, Path]:
         root = Path(tmp)

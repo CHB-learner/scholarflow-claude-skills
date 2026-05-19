@@ -132,6 +132,19 @@ pdfimages -png {pdf_path} pngs/
 
 读取 `user-config.json` 中的 `research_fields` 字段，匹配论文方向。
 
+方向匹配顺序：
+1. 优先从用户当前上下文、当前打开的 `Research_Fields/{方向}/summary.md`、`_meta/topic_papers.json` 中匹配论文标题、方法名、arXiv ID 或 DOI。
+2. 如果用户给出的论文和某个 `research_fields` 关键词明显匹配，保存到该方向。
+3. 如果用户冷不丁说 `读一下 XXX`，且论文与已有研究方向都不匹配，不要中断、不要反复追问方向；自动归入 `未分类`。
+
+未匹配论文的默认保存方向固定为：
+
+```text
+Research_Fields/未分类/papers/{MethodName}/
+```
+
+如果 `Research_Fields/未分类/` 或其 `papers/` 子目录不存在，先创建它们。该目录下的输出格式、文件命名、PDF、图片、EN/ZH 笔记要求与普通研究方向完全一致。写完后也要刷新 `未分类/summary.md`，让该论文出现在自动论文列表里。
+
 ### 保存目录结构
 
 **文件名格式（必须使用方法缩写作为前缀）**：

@@ -232,6 +232,14 @@ Research_Fields/{方向}/papers/{MethodName}/
 
 并回填 `summary.md` 里的笔记链接。
 
+如果这篇论文和已有研究方向都不匹配，会自动放到：
+
+```text
+Research_Fields/未分类/papers/{MethodName}/
+```
+
+输出格式和其它研究方向完全一样。
+
 ### 4. 📝 只看待精读候选
 
 ```text
