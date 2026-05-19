@@ -61,7 +61,77 @@ claude
 
 ### 2. 安装 ScholarFlow skills
 
-Claude Code 会读取 `~/.claude/skills/` 下的 skill 目录。本仓库有两种安装方式。
+Claude Code 会读取这些位置的 skill：
+
+- 个人级：`~/.claude/skills/<skill-name>/SKILL.md`，所有项目可用
+- 项目级：`<project>/.claude/skills/<skill-name>/SKILL.md`，只对当前项目可用
+
+本仓库包含多个 skills 和共享脚本，因此需要安装整个 ScholarFlow 目录集合，而不是只复制某一个 `SKILL.md`。
+
+#### 一行安装：个人级 skills
+
+适合大多数用户。安装后，在任何 Claude Code 项目里都能触发 ScholarFlow：
+
+```bash
+mkdir -p ~/.claude/skills && \
+tmp_dir="$(mktemp -d)" && \
+git clone https://github.com/CHB-learner/scholarflow-claude-skills.git "$tmp_dir/scholarflow-claude-skills" && \
+rsync -a \
+  "$tmp_dir/scholarflow-claude-skills/_shared" \
+  "$tmp_dir/scholarflow-claude-skills/daily-papers" \
+  "$tmp_dir/scholarflow-claude-skills/daily-papers-fetch" \
+  "$tmp_dir/scholarflow-claude-skills/daily-papers-review" \
+  "$tmp_dir/scholarflow-claude-skills/daily-papers-notes" \
+  "$tmp_dir/scholarflow-claude-skills/paper-reader" \
+  "$tmp_dir/scholarflow-claude-skills/topic-research" \
+  ~/.claude/skills/ && \
+rm -rf "$tmp_dir"
+```
+
+安装后确认：
+
+```bash
+find ~/.claude/skills -maxdepth 2 -name SKILL.md | sort
+```
+
+应该能看到：
+
+```text
+~/.claude/skills/daily-papers/SKILL.md
+~/.claude/skills/daily-papers-fetch/SKILL.md
+~/.claude/skills/daily-papers-notes/SKILL.md
+~/.claude/skills/daily-papers-review/SKILL.md
+~/.claude/skills/paper-reader/SKILL.md
+~/.claude/skills/topic-research/SKILL.md
+```
+
+#### 一行安装：项目级 skills
+
+如果只想让某个项目使用 ScholarFlow，在该项目根目录运行：
+
+```bash
+mkdir -p .claude/skills && \
+tmp_dir="$(mktemp -d)" && \
+git clone https://github.com/CHB-learner/scholarflow-claude-skills.git "$tmp_dir/scholarflow-claude-skills" && \
+rsync -a \
+  "$tmp_dir/scholarflow-claude-skills/_shared" \
+  "$tmp_dir/scholarflow-claude-skills/daily-papers" \
+  "$tmp_dir/scholarflow-claude-skills/daily-papers-fetch" \
+  "$tmp_dir/scholarflow-claude-skills/daily-papers-review" \
+  "$tmp_dir/scholarflow-claude-skills/daily-papers-notes" \
+  "$tmp_dir/scholarflow-claude-skills/paper-reader" \
+  "$tmp_dir/scholarflow-claude-skills/topic-research" \
+  .claude/skills/ && \
+rm -rf "$tmp_dir"
+```
+
+安装后确认：
+
+```bash
+find .claude/skills -maxdepth 2 -name SKILL.md | sort
+```
+
+下面是更适合长期维护的两种安装方式。
 
 #### 方式 A：让本仓库直接管理整个 `~/.claude/skills`
 
