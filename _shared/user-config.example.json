@@ -1,0 +1,40 @@
+{
+  "paths": {
+    "obsidian_vault": "~/ObsidianVault",
+    "daily_papers_folder": "Dailypaper",
+    "research_fields_folder": "Research_Fields",
+    "paper_notes_folder": "",
+    "concepts_folder": "Concepts",
+    "zotero_db": "~/Zotero/zotero.sqlite",
+    "zotero_storage": "~/Zotero/storage"
+  },
+  "research_fields": {
+    "RNA sequence design": [
+      "RNA design",
+      "mRNA design",
+      "RNA folding",
+      "inverse folding",
+      "nucleic acid design",
+      "sequence-to-function"
+    ]
+  },
+  "daily_papers": {
+    "keywords": [
+      "LLM evaluation",
+      "diffusion model"
+    ],
+    "negative_keywords": [],
+    "domain_boost_keywords": [],
+    "arxiv_categories": [
+      "cs.AI",
+      "cs.LG"
+    ],
+    "min_score": 2,
+    "top_n": 30
+  },
+  "automation": {
+    "auto_refresh_indexes": true,
+    "git_commit": false,
+    "git_push": false
+  }
+}

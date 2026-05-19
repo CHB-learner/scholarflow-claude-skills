@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+
+# Local user configuration. Copy the example file when setting up a machine.
+_shared/user-config.json
+_shared/user-config.local.json
+
+# Runtime state and logs
+*.log
+paper_daemon_progress.json
+paper_daemon.pid
+
+# macOS metadata
+.DS_Store

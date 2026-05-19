@@ -1,0 +1,81 @@
+---
+name: daily-papers
+description: |
+  每日论文推荐的一句话总入口。用户说"今日论文推荐""过去3天论文推荐""过去一周论文推荐"
+  "最近3天论文""看看这周有啥论文"时使用。
+
+  内部会自动：关键词丰富化 → 多源检索 → 规范化去重 → Claude判断相关性 → 生成推荐 → 生成笔记。
+
+  如果用户没有指定关键词，使用 user-config.json 中的 `daily_paper_keywords` 配置。
+---
+
+# 每日论文推荐
+
+这是面向用户的一句话入口。
+
+## 识别用户意图
+
+1. **识别时间范围**：
+   - `今日论文推荐`、`每日推荐`、`今日论文` -> 当天
+   - `过去3天论文推荐`、`最近3天论文` -> 3 天
+   - `过去一周论文推荐`、`看看这周有啥论文` -> 7 天
+   - `过去两个月` -> 60 天
+   - 其他 N 天 -> 用户指定的 N
+
+2. **识别关键词**：
+   - 如果用户指定了关键词（如"大模型评测"、"扩散模型"），使用用户提供的
+   - 如果用户没有指定，从 `daily_paper_keywords` 配置获取默认关键词
+
+## 执行流程
+
+### Step 1: 关键词丰富化
+
+对每个原始关键词进行丰富化（英文 + 中文变体）：
+
+| 原始关键词 | 丰富化关键词 |
+|-----------|-------------|
+| 大模型评测 | LLM evaluation, large language model benchmark, foundation model evaluation, 模型评测, 大模型评估 |
+| 扩散模型 | diffusion model, score-based model, diffusion generative model, 扩散生成模型 |
+
+丰富化逻辑：
+- 每个关键词展开为 4-6 个相关关键词（中英文混合）
+- 英文为主（覆盖 arXiv 检索），保留中文（覆盖中文论文）
+
+### Step 2: 多源检索（multi_source_fetch.py）
+
+调用 `multi_source_fetch.py`，传入丰富化后的关键词。输出保存在当天目录的 `_meta/` 下，便于复盘：
+
+```bash
+python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
+  --topic "每日论文" \
+  --queries-json '["{丰富化关键词1}", "{丰富化关键词2}"]' \
+  --since-year {年份下限} \
+  --max-results 100 \
+  --sources auto \
+  --output "{DAILY_PAPERS_PATH}/{月份}/{DD}/_meta/candidates.json"
+```
+
+输出：
+- `_meta/candidates.json`：规范化、去重、排序后的候选论文
+- `_meta/source_diagnostics.json`：各来源请求状态
+- `_meta/dedup_stats.json`：去重统计
+- `_meta/plan.json`：本次 topic / queries / source 配置
+
+### Step 3: Claude 判断相关性（daily-papers-review）
+
+读取 `_meta/candidates.json`，Claude 逐一判断每篇论文是否与关键词相关，输出 `core / adjacent / exclude` 筛选理由并生成推荐点评。
+
+### Step 4: 生成笔记（daily-papers-notes）
+
+对推荐中标记为"🔥 必读"的论文，逐篇生成中英双语笔记。
+
+## 重要约束
+
+- **不要先要求用户手动跑** `跑一下论文抓取 / 点评 / 笔记`
+- 这 3 句是内部流水线和调试入口，不是首页主交互
+- 如果用户明确只想跑其中一步，再交给对应 skill
+
+## 自动化
+
+- 本 skill 本身是"一步跑完整流水线"的入口
+- 如果用户想做本地定时任务，默认也应该触发这一句
