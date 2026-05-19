@@ -7,7 +7,8 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 
-SKILLS_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SKILLS_ROOT = REPO_ROOT / "skills"
 SHARED_DIR = SKILLS_ROOT / "_shared"
 DAILY_PAPERS_DIR = SKILLS_ROOT / "daily-papers"
 DAILY_PAPERS_NOTES_DIR = SKILLS_ROOT / "daily-papers-notes"

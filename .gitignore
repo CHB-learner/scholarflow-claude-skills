@@ -2,8 +2,8 @@ __pycache__/
 *.py[cod]
 
 # Local user configuration. Copy the example file when setting up a machine.
-_shared/user-config.json
-_shared/user-config.local.json
+skills/_shared/user-config.json
+skills/_shared/user-config.local.json
 
 # Runtime state and logs
 *.log

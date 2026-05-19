@@ -25,19 +25,21 @@ ScholarFlow 是一套写给 Claude Code 使用的论文工作流 skills，用来
 | `paper-reader` | 单篇论文精读和双语笔记生成 |
 | `topic-research` | 研究领域/方向调研，只更新候选 summary |
 
-共享 Python 工具位于 `_shared/`。
+共享 Python 工具位于 `skills/_shared/`。安装到 Claude Code 后，它会变成 `~/.claude/skills/_shared/` 或 `<project>/.claude/skills/_shared/`。
 
 ## 目录结构
 
 ```text
 .
-├── _shared/                 # 共享配置、schema、抓取器、summary 生成器
-├── daily-papers/            # 每日论文抓取和富化脚本
-├── daily-papers-fetch/      # 抓取阶段 Claude Code skill
-├── daily-papers-review/     # 筛选点评 Claude Code skill
-├── daily-papers-notes/      # 笔记生成 Claude Code skill
-├── paper-reader/            # 单篇论文精读 skill 和 Zotero daemon
-├── topic-research/          # 研究方向调研 skill
+├── README.md                # GitHub 项目说明
+├── skills/                  # Claude Code 可安装内容，安装时平铺到 .claude/skills
+│   ├── _shared/             # 共享配置、schema、抓取器、summary 生成器
+│   ├── daily-papers/        # 每日论文抓取和富化脚本
+│   ├── daily-papers-fetch/  # 抓取阶段 Claude Code skill
+│   ├── daily-papers-review/ # 筛选点评 Claude Code skill
+│   ├── daily-papers-notes/  # 笔记生成 Claude Code skill
+│   ├── paper-reader/        # 单篇论文精读 skill 和 Zotero daemon
+│   └── topic-research/      # 研究方向调研 skill
 └── tests/                   # Python 单元测试
 ```
 
@@ -68,6 +70,8 @@ Claude Code 会读取这些位置的 skill：
 
 本仓库包含多个 skills 和共享脚本，因此需要安装整个 ScholarFlow 目录集合，而不是只复制某一个 `SKILL.md`。
 
+仓库里的 `skills/` 是源目录。安装时要把 `skills/` 里面的内容平铺复制到 Claude Code 的 skills 目录，而不是把整个仓库 clone 到 `~/.claude/skills`。
+
 #### 一行安装：个人级 skills
 
 适合大多数用户。安装后，在任何 Claude Code 项目里都能触发 ScholarFlow：
@@ -76,15 +80,7 @@ Claude Code 会读取这些位置的 skill：
 mkdir -p ~/.claude/skills && \
 tmp_dir="$(mktemp -d)" && \
 git clone https://github.com/CHB-learner/scholarflow-claude-skills.git "$tmp_dir/scholarflow-claude-skills" && \
-rsync -a \
-  "$tmp_dir/scholarflow-claude-skills/_shared" \
-  "$tmp_dir/scholarflow-claude-skills/daily-papers" \
-  "$tmp_dir/scholarflow-claude-skills/daily-papers-fetch" \
-  "$tmp_dir/scholarflow-claude-skills/daily-papers-review" \
-  "$tmp_dir/scholarflow-claude-skills/daily-papers-notes" \
-  "$tmp_dir/scholarflow-claude-skills/paper-reader" \
-  "$tmp_dir/scholarflow-claude-skills/topic-research" \
-  ~/.claude/skills/ && \
+rsync -a "$tmp_dir/scholarflow-claude-skills/skills/" ~/.claude/skills/ && \
 rm -rf "$tmp_dir"
 ```
 
@@ -113,15 +109,7 @@ find ~/.claude/skills -maxdepth 2 -name SKILL.md | sort
 mkdir -p .claude/skills && \
 tmp_dir="$(mktemp -d)" && \
 git clone https://github.com/CHB-learner/scholarflow-claude-skills.git "$tmp_dir/scholarflow-claude-skills" && \
-rsync -a \
-  "$tmp_dir/scholarflow-claude-skills/_shared" \
-  "$tmp_dir/scholarflow-claude-skills/daily-papers" \
-  "$tmp_dir/scholarflow-claude-skills/daily-papers-fetch" \
-  "$tmp_dir/scholarflow-claude-skills/daily-papers-review" \
-  "$tmp_dir/scholarflow-claude-skills/daily-papers-notes" \
-  "$tmp_dir/scholarflow-claude-skills/paper-reader" \
-  "$tmp_dir/scholarflow-claude-skills/topic-research" \
-  .claude/skills/ && \
+rsync -a "$tmp_dir/scholarflow-claude-skills/skills/" .claude/skills/ && \
 rm -rf "$tmp_dir"
 ```
 
@@ -131,32 +119,16 @@ rm -rf "$tmp_dir"
 find .claude/skills -maxdepth 2 -name SKILL.md | sort
 ```
 
-下面是更适合长期维护的两种安装方式。
+下面是更适合长期维护的安装方式。
 
-#### 方式 A：让本仓库直接管理整个 `~/.claude/skills`
+#### 长期维护方式：保留仓库工作副本，再同步到 Claude Code
 
-适合你还没有其它 Claude Code skills，或者希望这个仓库直接作为完整 skills 目录：
-
-```bash
-mkdir -p ~/.claude
-git clone https://github.com/CHB-learner/scholarflow-claude-skills.git ~/.claude/skills
-```
-
-后续更新：
-
-```bash
-cd ~/.claude/skills
-git pull
-```
-
-#### 方式 B：保留已有 `~/.claude/skills`，只安装 ScholarFlow 相关目录
-
-适合你已经有其它 Claude Code skills，不想覆盖整个 skills 目录：
+适合需要经常 `git pull` 更新的用户：
 
 ```bash
 git clone https://github.com/CHB-learner/scholarflow-claude-skills.git ~/scholarflow-claude-skills
 mkdir -p ~/.claude/skills
-cp -R ~/scholarflow-claude-skills/{_shared,daily-papers,daily-papers-fetch,daily-papers-review,daily-papers-notes,paper-reader,topic-research} ~/.claude/skills/
+rsync -a ~/scholarflow-claude-skills/skills/ ~/.claude/skills/
 ```
 
 后续更新：
@@ -164,8 +136,10 @@ cp -R ~/scholarflow-claude-skills/{_shared,daily-papers,daily-papers-fetch,daily
 ```bash
 cd ~/scholarflow-claude-skills
 git pull
-cp -R {_shared,daily-papers,daily-papers-fetch,daily-papers-review,daily-papers-notes,paper-reader,topic-research} ~/.claude/skills/
+rsync -a skills/ ~/.claude/skills/
 ```
+
+不要把整个仓库 clone 到 `~/.claude/skills`，否则路径会变成 `~/.claude/skills/skills/topic-research/SKILL.md`，Claude Code 发现不到这些 skills。
 
 ### 3. 确认 Claude Code 能看到 skill
 
@@ -300,7 +274,7 @@ python3 -m unittest discover -s tests
 直接运行多源抓取：
 
 ```bash
-python3 daily-papers/multi_source_fetch.py \
+python3 skills/daily-papers/multi_source_fetch.py \
   --topic "RNA inverse folding" \
   --queries-json '["RNA inverse folding", "RNA design"]' \
   --since-year 2021 \
@@ -312,7 +286,7 @@ python3 daily-papers/multi_source_fetch.py \
 重新生成研究方向 summary：
 
 ```bash
-python3 _shared/generate_research_field_mocs.py [vault_path]
+python3 skills/_shared/generate_research_field_mocs.py [vault_path]
 ```
 
 ## 依赖
@@ -322,7 +296,7 @@ python3 _shared/generate_research_field_mocs.py [vault_path]
 - 可访问论文来源 API 的网络环境
 - `curl`
 - Poppler 工具：`pdftotext`、`pdfimages`
-- 可选：本地 Zotero 数据库和 storage，用于 `paper-reader/paper_daemon.py`
+- 可选：本地 Zotero 数据库和 storage，用于 `skills/paper-reader/paper_daemon.py`
 
 ## 重要约束
 
