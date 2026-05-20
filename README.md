@@ -4,6 +4,12 @@
 
 它的目标很简单：你用自然语言让 Codex 找论文 🔍、读论文 📖、整理方向 🧭，它把结果沉淀到 Obsidian 🧠。
 
+## ⚠️ 先选对分支
+
+🧑‍💻 **Codex 用户**：请使用当前 `codex-skill` 分支，本分支只暴露一个 `scholarflow` Codex skill。
+
+🐚 **Claude Code 用户**：请切换到 `main` 分支安装 Claude Code 版，那里保留多个 Claude Code skills 的平铺结构。
+
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=CHB-learner/scholarflow-claude-skills&type=Date)](https://www.star-history.com/#CHB-learner/scholarflow-claude-skills&Date)
