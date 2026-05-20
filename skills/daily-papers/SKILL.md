@@ -28,6 +28,34 @@ description: |
 
 ## 执行流程
 
+## 路径契约（必须）
+
+每日论文只能写入一个日期目录：
+
+```text
+{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/
+```
+
+例如 `Dailypaper/2026-05-20/`。禁止创建或写入任何月份/日期混合目录，包括：
+
+- `Dailypaper/5月/0520/`
+- `Dailypaper/5月/520/`
+- `Dailypaper/{月份}/{DD}/`
+- `Dailypaper/{月份}/{MMDD}/`
+
+执行前必须显式设置并复用：
+
+```bash
+DATE_DIR="$(date +%F)"
+DAILY_RUN_DIR="{DAILY_PAPERS_PATH}/$DATE_DIR"
+META_DIR="$DAILY_RUN_DIR/_meta"
+RECOMMENDATION_FILE="$DAILY_RUN_DIR/$DATE_DIR-论文推荐.md"
+```
+
+后续抓取、点评、笔记、图片、`_meta` 都只能使用这些变量。不要手写 `5月`、`0520`、`520` 这种路径。
+
+如果发现同一天的旧式目录已经存在，先停止写入并迁移到 `Dailypaper/{YYYY-MM-DD}/`；如果目标目录已有内容，保留目标目录，不要把新内容写回旧式目录。
+
 ### Step 1: 关键词丰富化
 
 对每个原始关键词进行丰富化（英文 + 中文变体）：
@@ -52,7 +80,7 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
   --since-year {年份下限} \
   --max-results 100 \
   --sources auto \
-  --output "{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/_meta/candidates.json"
+  --output "$META_DIR/candidates.json"
 ```
 
 输出：

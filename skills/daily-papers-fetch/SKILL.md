@@ -37,6 +37,30 @@ description: |
 
 后续统一以共享配置和上面的变量为准。
 
+## 路径契约（必须）
+
+每日抓取只能写入：
+
+```text
+{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/_meta/
+```
+
+执行前必须设置：
+
+```bash
+DATE_DIR="$(date +%F)"
+DAILY_RUN_DIR="{DAILY_PAPERS_PATH}/$DATE_DIR"
+META_DIR="$DAILY_RUN_DIR/_meta"
+```
+
+禁止创建或写入：
+
+- `{DAILY_PAPERS_PATH}/{月份}/{DD}/_meta`
+- `{DAILY_PAPERS_PATH}/{月份}/{MMDD}/_meta`
+- 任何 `5月/0520`、`5月/520` 这类目录
+
+如果旧式月份目录已经存在，不要继续写入。若同一天目标目录不存在，先迁移旧目录到 `{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/`；若目标目录已存在，只使用目标目录。
+
 ## 解析天数
 
 从用户输入中解析 `--days N` 参数。匹配规则：
@@ -60,7 +84,8 @@ description: |
 用 `multi_source_fetch.py` 一步完成免费核心源抓取、统一 Paper schema、强 ID 去重、标题相似度去重、排序和诊断。**零 token 消耗。**
 
 ```bash
-DAILY_RUN_DIR="{DAILY_PAPERS_PATH}/{YYYY-MM-DD}"
+DATE_DIR="$(date +%F)"
+DAILY_RUN_DIR="{DAILY_PAPERS_PATH}/$DATE_DIR"
 META_DIR="$DAILY_RUN_DIR/_meta"
 mkdir -p "$META_DIR"
 python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \

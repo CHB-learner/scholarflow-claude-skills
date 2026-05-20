@@ -689,6 +689,21 @@ class ResearchFieldMocTests(unittest.TestCase):
         self.assertIn("不要创建 `Dailypaper/{YYYY-MM-DD}`", topic_skill)
         self.assertNotIn("research-{主题}.md", topic_skill)
 
+    def test_daily_skill_docs_forbid_legacy_month_directories(self):
+        daily_skills = [
+            SKILLS_ROOT / "daily-papers" / "SKILL.md",
+            SKILLS_ROOT / "daily-papers-fetch" / "SKILL.md",
+            SKILLS_ROOT / "daily-papers-review" / "SKILL.md",
+            SKILLS_ROOT / "daily-papers-notes" / "SKILL.md",
+        ]
+
+        for skill_path in daily_skills:
+            content = skill_path.read_text(encoding="utf-8")
+            self.assertIn("{DAILY_PAPERS_PATH}/{YYYY-MM-DD}", content, skill_path)
+            self.assertIn("DAILY_RUN_DIR", content, skill_path)
+            self.assertIn("5月/0520", content, skill_path)
+            self.assertIn("禁止创建或写入", content, skill_path)
+
     def _make_vault(self, tmp: str) -> tuple[Path, Path]:
         root = Path(tmp)
         vault = root / "vault"

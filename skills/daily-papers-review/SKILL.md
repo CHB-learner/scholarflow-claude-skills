@@ -27,6 +27,31 @@ description: |
 
 优先读取输入文件：`{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/_meta/enriched.json`；如果不存在，读取 `_meta/candidates.json`。
 
+## 路径契约（必须）
+
+点评只能读取和写入：
+
+```text
+{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/
+```
+
+执行前必须设置：
+
+```bash
+DATE_DIR="$(date +%F)"
+DAILY_RUN_DIR="{DAILY_PAPERS_PATH}/$DATE_DIR"
+META_DIR="$DAILY_RUN_DIR/_meta"
+RECOMMENDATION_FILE="$DAILY_RUN_DIR/$DATE_DIR-论文推荐.md"
+```
+
+禁止创建或写入：
+
+- `{DAILY_PAPERS_PATH}/{月份}/{DD}/`
+- `{DAILY_PAPERS_PATH}/{月份}/{MMDD}/`
+- 任何 `5月/0520`、`5月/520` 这类目录
+
+如果旧式月份目录里已有同一天推荐文件，不要在旧目录继续覆盖。目标日期目录不存在时才迁移旧目录；目标日期目录已存在时，只写目标日期目录，并提示旧目录需要清理。
+
 ## 前置检查
 
 1. 检查当天 `_meta/enriched.json` 或 `_meta/candidates.json` 是否存在
@@ -44,7 +69,7 @@ description: |
 
 **创建目录**（如果不存在）：
 ```bash
-mkdir -p "{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/pngs"
+mkdir -p "$DAILY_RUN_DIR/pngs"
 ```
 
 ### Phase 2: 读取关键词配置
@@ -149,7 +174,7 @@ LLM 根据关键词列表，理解当日检索的主题和边界。
 
 ### Phase 5: 保存到 Obsidian
 
-用 Write 工具保存到 `{DAILY_PAPERS_PATH}/{YYYY-MM-DD}/YYYY-MM-DD-论文推荐.md`。
+用 Write 工具保存到 `$RECOMMENDATION_FILE`。
 
 文件开头加 YAML frontmatter：
 
@@ -166,7 +191,7 @@ tags: [daily-papers, auto-generated]
 仅当 `GIT_COMMIT_ENABLED=true` 时执行：
 
 ```bash
-cd {VAULT_PATH} && git add "Dailypaper/{YYYY-MM-DD}/YYYY-MM-DD-论文推荐.md" && git commit -m "daily papers: YYYY-MM-DD"
+cd {VAULT_PATH} && git add "Dailypaper/$DATE_DIR/$DATE_DIR-论文推荐.md" && git commit -m "daily papers: $DATE_DIR"
 ```
 
 只有 `GIT_PUSH_ENABLED=true` 且仓库已配置远端时才 push。
