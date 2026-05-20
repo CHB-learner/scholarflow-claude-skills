@@ -224,6 +224,10 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 
 🚫 不会自动精读，也不会写入 `Dailypaper/{YYYY-MM-DD}`。
 
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=CHB-learner/scholarflow-claude-skills&type=Date)](https://www.star-history.com/#CHB-learner/scholarflow-claude-skills&Date)
+
 ## 🌟 一句话记住
 
 🗞️ `今日论文推荐` 看新论文，📖 `读一下 XXX` 生成深度笔记，🔎 `调研 XXX` 建立研究方向候选列表。
