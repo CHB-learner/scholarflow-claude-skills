@@ -1,12 +1,3 @@
----
-name: daily-papers-review
-description: |
-  论文点评（3 步流水线的第 2 步）。读取多源检索后的候选论文数据，Claude 判断相关性，生成推荐点评，
-  保存推荐文件到 Obsidian。
-
-  触发词："论文点评"、"跑一下论文点评"
----
-
 > **开始前**: 先说一声 "开始点评论文 🔪" 并告知今天日期。
 
 # 论文点评 (Review + Save)
@@ -15,7 +6,7 @@ description: |
 
 ## Step 0: 读取共享配置
 
-先读取 `../_shared/user-config.json`，如果 `../_shared/user-config.local.json` 存在，再用它覆盖默认值。
+先读取 `scripts/_shared/user-config.json`，如果 `scripts/_shared/user-config.local.json` 存在，再用它覆盖默认值。
 
 显式生成并在后续统一使用这些变量：
 
@@ -85,9 +76,9 @@ mkdir -p "$DAILY_RUN_DIR/pngs"
 
 LLM 根据关键词列表，理解当日检索的主题和边界。
 
-### Phase 3: Claude 判断相关性
+### Phase 3: Codex 判断相关性
 
-读取候选论文 JSON 中的所有论文，Claude 逐一判断：
+读取候选论文 JSON 中的所有论文，Codex 逐一判断：
 
 **判断标准**（根据关键词理解）：
 - 论文是否与该关键词有实质性关联

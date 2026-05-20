@@ -17,7 +17,7 @@ from paper_sources import SOURCE_REGISTRY, search_all_with_diagnostics
 
 def main(argv: list[str] | None = None, *, registry=None) -> int:
     parser = argparse.ArgumentParser(description="Multi-source paper fetch with normalized output.")
-    parser.add_argument("--topic", required=True, help="Research topic understood by Claude.")
+    parser.add_argument("--topic", required=True, help="Research topic understood by Codex.")
     parser.add_argument("--queries-json", required=True, help="JSON list of diversified search queries.")
     parser.add_argument("--since-year", type=int, default=None, help="Lower publication year bound.")
     parser.add_argument("--max-results", type=int, default=100, help="Maximum deduplicated candidates to write.")

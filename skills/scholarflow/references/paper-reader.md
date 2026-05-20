@@ -1,16 +1,3 @@
----
-name: paper-reader
-description: |
-  Use when user asks to "read paper", "analyze paper", "summarize paper",
-  "读论文", "分析文献", "帮我看一下这篇paper", "论文笔记", or provides a PDF file
-  that appears to be an academic paper.
-
-  **重要触发词**: "读一下 XXX"、"精读 XXX"、"生成笔记 XXX"、"帮我读 XXX" → 必须调用此 skill
-  **不要触发**: 用户只说"读一下"但没有给论文名、链接或 PDF 时，不启动深读；先列出 summary 中待精读候选让用户选择。
-context: fork
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
----
-
 > **开始前**: 先跟用户打个招呼 🐕
 
 # 学术论文阅读助手 (Paper Reader)
@@ -33,7 +20,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 
 ## Step 0: 读取共享配置
 
-先读取 `../_shared/user-config.json`，如果 `../_shared/user-config.local.json` 存在，再用它覆盖默认值。配置同时兼容新格式 `vault/folders/daily/fields/zotero` 和旧格式 `paths/daily_papers/research_fields`。
+先读取 `scripts/_shared/user-config.json`，如果 `scripts/_shared/user-config.local.json` 存在，再用它覆盖默认值。配置同时兼容新格式 `vault/folders/daily/fields/zotero` 和旧格式 `paths/daily_papers/research_fields`。
 
 显式生成并在后续统一使用这些变量：
 
@@ -177,8 +164,8 @@ pdfimages -png {pdf_path} pngs/
 
 ## 4. 笔记模板
 
-### 英文模板：`assets/paper-note-template-en.md`
-### 中文模板：`assets/paper-note-template-zh.md`
+### 英文模板：`assets/paper-reader/paper-note-template-en.md`
+### 中文模板：`assets/paper-reader/paper-note-template-zh.md`
 
 **严格遵循模板**，不可简化。
 
@@ -249,4 +236,4 @@ pdfimages -png {pdf_path} pngs/
 
 ## 参考文件
 
-- **`references/quality-standards.md`** — 公式/图片/表格详细质量规范
+- **`references/paper-reader/quality-standards.md`** — 公式/图片/表格详细质量规范

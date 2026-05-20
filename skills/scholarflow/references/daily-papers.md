@@ -1,14 +1,3 @@
----
-name: daily-papers
-description: |
-  每日论文推荐的一句话总入口。用户说"今日论文推荐""过去3天论文推荐""过去一周论文推荐"
-  "最近3天论文""看看这周有啥论文"时使用。
-
-  内部会自动：关键词丰富化 → 多源检索 → 规范化去重 → Claude判断相关性 → 生成推荐 → 生成笔记。
-
-  如果用户没有指定关键词，使用共享配置中的 `daily.keywords`；旧配置 `daily_paper_keywords` 仍兼容。
----
-
 # 每日论文推荐
 
 这是面向用户的一句话入口。
@@ -74,7 +63,7 @@ RECOMMENDATION_FILE="$DAILY_RUN_DIR/$DATE_DIR-论文推荐.md"
 调用 `multi_source_fetch.py`，传入丰富化后的关键词。输出保存在当天日期目录的 `_meta/` 下，便于复盘：
 
 ```bash
-python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
+python3 scripts/daily-papers/multi_source_fetch.py \
   --topic "每日论文" \
   --queries-json '["{丰富化关键词1}", "{丰富化关键词2}"]' \
   --since-year {年份下限} \
@@ -89,9 +78,9 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
 - `_meta/dedup_stats.json`：去重统计
 - `_meta/plan.json`：本次 topic / queries / source 配置
 
-### Step 3: Claude 判断相关性（daily-papers-review）
+### Step 3: Codex 判断相关性（daily-papers-review）
 
-读取 `_meta/candidates.json`，Claude 逐一判断每篇论文是否与关键词相关，输出 `core / adjacent / exclude` 筛选理由并生成推荐点评。
+读取 `_meta/candidates.json`，Codex 逐一判断每篇论文是否与关键词相关，输出 `core / adjacent / exclude` 筛选理由并生成推荐点评。
 
 ### Step 4: 生成笔记（daily-papers-notes）
 

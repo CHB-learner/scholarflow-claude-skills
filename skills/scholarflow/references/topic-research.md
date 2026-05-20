@@ -1,28 +1,16 @@
----
-name: topic-research
-description: |
-  用户说"调研XXX领域的文章"、"帮我搜索XXX相关论文"、"我想了解一下XXX方向"时使用。
-  根据用户输入的主题，用 LLM 生成多样化检索关键词，然后自动抓取、点评、更新 summary 候选列表。
-  调研阶段不精读论文，不调用 paper-reader，不下载 PDF，不抽图。
-
-  **触发词**：调研、搜索、了解、看看XX方向、XX领域文章
-context: fork
-allowed-tools: Bash, Read, Write, Glob, Grep
----
-
 > **开始前**: 先跟用户打个招呼 🐕，确认日期（如"今天是5月19日"）。
 
 # 主题调研（LLM 生成关键词版）
 
-根据用户描述的主题，Claude 自动理解意图并生成多样化检索关键词，然后跑完多源抓取 → 规范化去重 → 相关性筛选 → 点评 → 更新 `summary.md` 候选列表。
+根据用户描述的主题，Codex 自动理解意图并生成多样化检索关键词，然后跑完多源抓取 → 规范化去重 → 相关性筛选 → 点评 → 更新 `summary.md` 候选列表。
 
 **本 skill 是轻量调研入口：不调用 paper-reader，不精读论文，不生成中英双语深度笔记。**
 
-**不要写临时全量抓取脚本直接刷新 summary。** 必须走 `multi_source_fetch.py` 生成候选和诊断文件，再由 Claude 做相关性筛选后只把前 50 篇 `core/adjacent` 候选写入 `_meta/topic_papers.json` 和 `summary.md`。
+**不要写临时全量抓取脚本直接刷新 summary。** 必须走 `multi_source_fetch.py` 生成候选和诊断文件，再由 Codex 做相关性筛选后只把前 50 篇 `core/adjacent` 候选写入 `_meta/topic_papers.json` 和 `summary.md`。
 
 ## Step 0: 读取共享配置
 
-读取 `../_shared/user-config.json`（和 `user-config.local.json` 如果存在）。配置同时兼容新格式 `vault/folders/daily/fields/zotero` 和旧格式 `paths/daily_papers/research_fields`。
+读取 `scripts/_shared/user-config.json`（和 `scripts/_shared/user-config.local.json` 如果存在）。配置同时兼容新格式 `vault/folders/daily/fields/zotero` 和旧格式 `paths/daily_papers/research_fields`。
 
 显式生成以下变量：
 - `VAULT_PATH` — Obsidian 输出根目录
@@ -73,7 +61,7 @@ FIELD_DIR="{VAULT_PATH}/Research_Fields/{主题}"
 PAPERS_DIR="{FIELD_DIR}/papers"
 META_DIR="{FIELD_DIR}/_meta"
 mkdir -p "$PAPERS_DIR" "$META_DIR"
-python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
+python3 scripts/daily-papers/multi_source_fetch.py \
   --topic "{主题}" \
   --queries-json '["{关键词1}", "{关键词2}", "{关键词3}"]' \
   --since-year {年份下限} \
@@ -88,9 +76,9 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
 
 调研方向时不要创建 `Dailypaper/{YYYY-MM-DD}` 或其 `_meta` 目录；调研相关中间产物只放在 `{FIELD_DIR}/_meta/`。
 
-## Step 5: Claude 筛选与点评（风格：毒舌但精准）
+## Step 5: Codex 筛选与点评（风格：毒舌但精准）
 
-读取所有候选论文后，Claude 逐一判断相关性并生成锐评。
+读取所有候选论文后，Codex 逐一判断相关性并生成锐评。
 
 **点评人设**：毒舌但眼光极准的 AI 论文审稿人，像 senior researcher，对灌水零容忍。
 

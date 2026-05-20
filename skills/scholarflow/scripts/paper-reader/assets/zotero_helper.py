@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Zotero 数据库查询辅助脚本
-用于 paper-reader skill 的 Zotero 集成
+用于 ScholarFlow 论文精读流程 的 Zotero 集成
 """
 
 import sqlite3

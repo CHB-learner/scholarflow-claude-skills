@@ -1,12 +1,3 @@
----
-name: daily-papers-notes
-description: |
-  论文笔记生成（3 步流水线的第 3 步）。为推荐论文生成完整笔记，链接回填到推荐文件。
-  目录页默认自动刷新，git 自动化默认关闭。
-
-  触发词："批量笔记"、"跑一下论文笔记"
----
-
 > **开始前**: 先说一声 "开始整理笔记 📝" 并告知今天日期。
 
 # 论文笔记 (Notes + Backfill)
@@ -15,7 +6,7 @@ description: |
 
 ## Step 0: 读取共享配置
 
-先读取 `../_shared/user-config.json`，如果 `../_shared/user-config.local.json` 存在，再用它覆盖默认值。
+先读取 `scripts/_shared/user-config.json`，如果 `scripts/_shared/user-config.local.json` 存在，再用它覆盖默认值。
 
 显式生成并在后续统一使用这些变量：
 
@@ -79,8 +70,8 @@ mkdir -p "$DAILY_RUN_DIR/pngs"
 为推荐论文生成完整论文笔记：
 
 1. 从当天的推荐文件中，读取分流表，筛选出标记为"🔥 必读"的论文（"值得看"和"可跳过"的不生成笔记）
-2. 对每篇"必读"论文，使用 paper-reader skill 生成笔记：
-   - 调用 Task agent，传入 arXiv 链接
+2. 对每篇"必读"论文，使用 ScholarFlow 论文精读流程生成笔记：
+   - 传入 arXiv 链接或论文标题
    - **输出路径固定为** `$DAILY_RUN_DIR/`
    - 笔记文件名：`{MethodName}_en.md` 和 `{MethodName}_zh.md`
    - 图片保存到 `pngs/` 子目录
@@ -92,8 +83,7 @@ mkdir -p "$DAILY_RUN_DIR/pngs"
 
 #### ⚠️ 笔记质量硬性要求
 
-**绝对禁止自己手写简化版笔记。每篇论文必须通过 Task agent 调用 `/paper-reader` skill 生成。**
-paper-reader 在独立的 Task agent 中运行，不会占用主 agent 的 context。
+**绝对禁止自己手写简化版笔记。每篇论文必须走 ScholarFlow 的论文精读流程。**
 
 #### 🔍 生成后质量验证（每篇必须执行）
 

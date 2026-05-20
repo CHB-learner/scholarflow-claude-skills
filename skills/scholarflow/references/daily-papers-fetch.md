@@ -1,13 +1,3 @@
----
-name: daily-papers-fetch
-description: |
-  论文抓取（3 步流水线的第 1 步）。根据 Claude 生成的多样化关键词，执行多源检索、
-  规范化、去重、排序和基础富化，输出 candidates/source_diagnostics/dedup_stats 供后续 skill 使用。
-
-  触发词："论文抓取"、"跑一下论文抓取"
-  支持多天模式："过去3天论文推荐"、"过去一周论文推荐"、"过去一周的论文"、"抓 3 天的论文"、"最近5天"
----
-
 > **开始前**: 先说一声 "开始抓取论文 🐕" 并告知今天日期。如果是多天模式，告知抓取范围。
 
 # 论文抓取 (Multi-source Fetch + Dedup + Enrich)
@@ -16,7 +6,7 @@ description: |
 
 ## Step 0: 读取共享配置
 
-先读取 `../_shared/user-config.json`，如果 `../_shared/user-config.local.json` 存在，再用它覆盖默认值。
+先读取 `scripts/_shared/user-config.json`，如果 `scripts/_shared/user-config.local.json` 存在，再用它覆盖默认值。
 
 显式生成并在后续统一使用这些变量：
 
@@ -73,8 +63,8 @@ META_DIR="$DAILY_RUN_DIR/_meta"
 
 ## 配置来源
 
-- 默认配置在 `../_shared/user-config.json`
-- 个人覆盖配置放在 `../_shared/user-config.local.json`
+- 默认配置在 `scripts/_shared/user-config.json`
+- 个人覆盖配置放在 `scripts/_shared/user-config.local.json`
 - 如果两者都存在，以 `local` 为准
 
 ## 工作流程
@@ -88,9 +78,9 @@ DATE_DIR="$(date +%F)"
 DAILY_RUN_DIR="{DAILY_PAPERS_PATH}/$DATE_DIR"
 META_DIR="$DAILY_RUN_DIR/_meta"
 mkdir -p "$META_DIR"
-python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
+python3 scripts/daily-papers/multi_source_fetch.py \
   --topic "每日论文" \
-  --queries-json '["{Claude生成的英文检索词1}", "{Claude生成的英文检索词2}"]' \
+  --queries-json '["{Codex生成的英文检索词1}", "{Codex生成的英文检索词2}"]' \
   --since-year {年份下限} \
   --max-results 100 \
   --sources auto \
@@ -119,7 +109,7 @@ python3 ~/.claude/skills/daily-papers/multi_source_fetch.py \
 将候选文件复制/传入富化脚本：
 
 ```bash
-python3 ~/.claude/skills/daily-papers/enrich_papers.py \
+python3 scripts/daily-papers/enrich_papers.py \
   "$META_DIR/candidates.json" \
   "$META_DIR/enriched.json"
 ```
@@ -156,8 +146,8 @@ python3 ~/.claude/skills/daily-papers/enrich_papers.py \
 
 ## 注意事项
 
-- Phase 1 使用 `multi_source_fetch.py` 脚本，**不启动 Task Agent**，零 token 消耗
-- Phase 2 使用 `enrich_papers.py` 脚本，同样不启动 Task Agent
+- Phase 1 使用 `multi_source_fetch.py` 脚本，**不启动 agent 子流程**，零 token 消耗
+- Phase 2 使用 `enrich_papers.py` 脚本，同样不启动 agent 子流程
 - 如果脚本执行失败，检查 stderr 输出诊断问题
 - 如果某个来源抓取失败，脚本会在 `source_diagnostics.json` 记录错误并继续处理其他来源
 - 如果总论文数不足 20 篇，有多少处理多少

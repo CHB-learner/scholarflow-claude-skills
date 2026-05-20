@@ -9,10 +9,13 @@ from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILLS_ROOT = REPO_ROOT / "skills"
-SHARED_DIR = SKILLS_ROOT / "_shared"
-DAILY_PAPERS_DIR = SKILLS_ROOT / "daily-papers"
-DAILY_PAPERS_NOTES_DIR = SKILLS_ROOT / "daily-papers-notes"
-PAPER_READER_DIR = SKILLS_ROOT / "paper-reader"
+SCHOLARFLOW_DIR = SKILLS_ROOT / "scholarflow"
+SCRIPTS_DIR = SCHOLARFLOW_DIR / "scripts"
+REFERENCES_DIR = SCHOLARFLOW_DIR / "references"
+SHARED_DIR = SCRIPTS_DIR / "_shared"
+DAILY_PAPERS_DIR = SCRIPTS_DIR / "daily-papers"
+DAILY_PAPERS_NOTES_DIR = SCRIPTS_DIR / "daily-papers-notes"
+PAPER_READER_DIR = SCRIPTS_DIR / "paper-reader"
 
 for path in (SHARED_DIR, DAILY_PAPERS_DIR, DAILY_PAPERS_NOTES_DIR, PAPER_READER_DIR):
     if str(path) not in sys.path:
@@ -673,9 +676,14 @@ class ResearchFieldMocTests(unittest.TestCase):
             self.assertIn("file=papers/ColdStartPaper/ColdStartPaper_en", content)
 
     def test_skill_docs_make_topic_research_lightweight_and_require_named_read(self):
-        topic_skill = (SKILLS_ROOT / "topic-research" / "SKILL.md").read_text(encoding="utf-8")
-        paper_reader_skill = (SKILLS_ROOT / "paper-reader" / "SKILL.md").read_text(encoding="utf-8")
+        root_skill = (SCHOLARFLOW_DIR / "SKILL.md").read_text(encoding="utf-8")
+        topic_skill = (REFERENCES_DIR / "topic-research.md").read_text(encoding="utf-8")
+        paper_reader_skill = (REFERENCES_DIR / "paper-reader.md").read_text(encoding="utf-8")
 
+        self.assertIn("name: scholarflow", root_skill)
+        self.assertIn("今日论文推荐", root_skill)
+        self.assertIn("读一下 XXX", root_skill)
+        self.assertIn("调研 XXX", root_skill)
         self.assertIn("不调用 paper-reader", topic_skill)
         self.assertIn("topic_papers.json", topic_skill)
         self.assertIn("最多 50 篇", topic_skill)
@@ -690,19 +698,37 @@ class ResearchFieldMocTests(unittest.TestCase):
         self.assertNotIn("research-{主题}.md", topic_skill)
 
     def test_daily_skill_docs_forbid_legacy_month_directories(self):
-        daily_skills = [
-            SKILLS_ROOT / "daily-papers" / "SKILL.md",
-            SKILLS_ROOT / "daily-papers-fetch" / "SKILL.md",
-            SKILLS_ROOT / "daily-papers-review" / "SKILL.md",
-            SKILLS_ROOT / "daily-papers-notes" / "SKILL.md",
+        daily_docs = [
+            REFERENCES_DIR / "daily-papers.md",
+            REFERENCES_DIR / "daily-papers-fetch.md",
+            REFERENCES_DIR / "daily-papers-review.md",
+            REFERENCES_DIR / "daily-papers-notes.md",
         ]
 
-        for skill_path in daily_skills:
-            content = skill_path.read_text(encoding="utf-8")
-            self.assertIn("{DAILY_PAPERS_PATH}/{YYYY-MM-DD}", content, skill_path)
-            self.assertIn("DAILY_RUN_DIR", content, skill_path)
-            self.assertIn("5月/0520", content, skill_path)
-            self.assertIn("禁止创建或写入", content, skill_path)
+        for doc_path in daily_docs:
+            content = doc_path.read_text(encoding="utf-8")
+            self.assertIn("{DAILY_PAPERS_PATH}/{YYYY-MM-DD}", content, doc_path)
+            self.assertIn("DAILY_RUN_DIR", content, doc_path)
+            self.assertIn("5月/0520", content, doc_path)
+            self.assertIn("禁止创建或写入", content, doc_path)
+
+    def test_codex_package_has_single_skill_entrypoint(self):
+        skill_files = sorted(path.relative_to(SKILLS_ROOT) for path in SKILLS_ROOT.rglob("SKILL.md"))
+
+        self.assertEqual(skill_files, [Path("scholarflow/SKILL.md")])
+
+    def test_codex_package_does_not_reference_claude_install_paths(self):
+        checked_files = [
+            path
+            for path in list(SCHOLARFLOW_DIR.rglob("*")) + [REPO_ROOT / "README.md"]
+            if path.is_file() and path.suffix in {".md", ".py", ".json"}
+        ]
+
+        for path in checked_files:
+            content = path.read_text(encoding="utf-8")
+            self.assertNotIn("~/.claude/skills", content, path)
+            self.assertNotIn("~/.claude", content, path)
+            self.assertNotIn("Claude Code", content, path)
 
     def _make_vault(self, tmp: str) -> tuple[Path, Path]:
         root = Path(tmp)

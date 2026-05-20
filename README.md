@@ -1,8 +1,8 @@
-# ScholarFlow Claude Skills
+# ScholarFlow Codex Skill
 
-📚✨ **ScholarFlow 是一套面向 Claude Code 的论文推荐、论文精读、领域调研与 Obsidian 知识库维护 skills。**
+📚✨ **ScholarFlow 是一套面向 Codex 的论文推荐、论文精读、领域调研与 Obsidian 知识库维护 skill。**
 
-它的目标很简单：你用自然语言让 Claude Code 找论文 🔍、读论文 📖、整理方向 🧭，它把结果沉淀到 Obsidian 🧠。
+它的目标很简单：你用自然语言让 Codex 找论文 🔍、读论文 📖、整理方向 🧭，它把结果沉淀到 Obsidian 🧠。
 
 ## ⭐ Star History
 
@@ -16,36 +16,36 @@
 
 2. 📖 **读某篇论文**
 
-   🧠 你说 `读一下 XXX` 或 `精读 XXX`，Claude 生成中英双语深度笔记。若论文不匹配任何研究方向，自动保存到 `未分类/`，文件夹结构和领域内精读笔记一致。
+   🧠 你说 `读一下 XXX` 或 `精读 XXX`，Codex 生成中英双语深度笔记。若论文不匹配任何研究方向，自动保存到 `未分类/`，文件夹结构和领域内精读笔记一致。
 
 3. 🔎 **领域调研**
 
-   🧭 你说 `调研 XXX`，Claude 只抓取、筛选、更新候选列表和 summary，不自动精读；后续你指定论文再读。
+   🧭 你说 `调研 XXX`，Codex 只抓取、筛选、更新候选列表和 summary，不自动精读；后续你指定论文再读。
 
-🛠️ 底层仍保留 `daily-papers-fetch`、`daily-papers-review`、`daily-papers-notes` 等分步骤 skills，方便需要时单独调试。
+🛠️ Codex 侧只暴露一个 `scholarflow` 入口，底层仍保留抓取、点评、笔记、summary 更新等脚本和参考流程。
 
-## 🚀 安装到 Claude Code
+## 🚀 安装到 Codex
 
-📍 Claude Code 识别的 skill 路径是：
+📍 Codex 识别的 skill 路径是：
 
 ```text
-~/.claude/skills/<skill-name>/SKILL.md
+~/.codex/skills/<skill-name>/SKILL.md
 ```
 
-📦 本仓库的可安装内容在 `skills/` 目录里。安装时要把 `skills/` 里面的内容平铺同步到 `~/.claude/skills/`。
+📦 本仓库的可安装内容在 `skills/scholarflow/` 目录里。安装时同步到 `~/.codex/skills/scholarflow/`。
 
 ```bash
-mkdir -p ~/.claude/skills && \
+mkdir -p ~/.codex/skills && \
 tmp_dir="$(mktemp -d)" && \
-git clone https://github.com/CHB-learner/scholarflow-claude-skills.git "$tmp_dir/scholarflow-claude-skills" && \
-rsync -a "$tmp_dir/scholarflow-claude-skills/skills/" ~/.claude/skills/ && \
+git clone -b codex-skill https://github.com/CHB-learner/scholarflow-claude-skills.git "$tmp_dir/scholarflow-claude-skills" && \
+rsync -a "$tmp_dir/scholarflow-claude-skills/skills/scholarflow/" ~/.codex/skills/scholarflow/ && \
 rm -rf "$tmp_dir"
 ```
 
 ✅ 确认安装：
 
 ```bash
-find ~/.claude/skills -maxdepth 2 -name SKILL.md | sort
+find ~/.codex/skills/scholarflow -maxdepth 2 -name SKILL.md | sort
 ```
 
 ## ⚙️ 配置参数
@@ -53,13 +53,13 @@ find ~/.claude/skills -maxdepth 2 -name SKILL.md | sort
 📋 复制示例配置：
 
 ```bash
-cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/user-config.local.json
+cp ~/.codex/skills/scholarflow/scripts/_shared/user-config.example.json ~/.codex/skills/scholarflow/scripts/_shared/user-config.local.json
 ```
 
 ✏️ 编辑：
 
 ```text
-~/.claude/skills/_shared/user-config.local.json
+~/.codex/skills/scholarflow/scripts/_shared/user-config.local.json
 ```
 
 🌈 推荐配置格式：
