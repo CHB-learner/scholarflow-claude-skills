@@ -4,6 +4,10 @@
 
 它的目标很简单：你用自然语言让 Claude Code 找论文 🔍、读论文 📖、整理方向 🧭，它把结果沉淀到 Obsidian 🧠。
 
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=CHB-learner/scholarflow-claude-skills&type=Date)](https://www.star-history.com/#CHB-learner/scholarflow-claude-skills&Date)
+
 ## ✨ 主要功能
 
 1. 🗞️ **每日论文推荐**
@@ -223,10 +227,6 @@ cp ~/.claude/skills/_shared/user-config.example.json ~/.claude/skills/_shared/us
 ```
 
 🚫 不会自动精读，也不会写入 `Dailypaper/{YYYY-MM-DD}`。
-
-## ⭐ Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=CHB-learner/scholarflow-claude-skills&type=Date)](https://www.star-history.com/#CHB-learner/scholarflow-claude-skills&Date)
 
 ## 🌟 一句话记住
 
